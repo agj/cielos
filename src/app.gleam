@@ -1,5 +1,7 @@
 import gleam/float
 import gleam/int
+import gleam/io
+import gleam/list
 import gleam_community/colour
 import paint as p
 import paint/canvas
@@ -12,13 +14,16 @@ pub fn main() {
 }
 
 fn init(_config: canvas.Config) -> Model {
-  Model(avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.0))
+  Model(
+    avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.0),
+    mouse_pos: Vec2(0.0, 0.0),
+  )
 }
 
 // MODEL
 
 type Model {
-  Model(avatar: Vector)
+  Model(avatar: Vector, mouse_pos: Vec2(Float))
 }
 
 type Vector {
@@ -29,8 +34,24 @@ type Vector {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
-    event.Tick(t) -> Model(..model, avatar: move_avatar(model.avatar))
+    // event.Tick(t) -> Model(..model, avatar: move_avatar(model.avatar))
+    event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
+    event.MousePressed(event.MouseButtonLeft) -> {
+      io.println(
+        float.to_string(model.mouse_pos.x)
+        <> ", "
+        <> float.to_string(model.mouse_pos.x),
+      )
+      Model(
+        ..model,
+        avatar: Vector(
+          ..model.avatar,
+          pos: model.mouse_pos
+            |> vec2f.subtract(center),
+        ),
+      )
+    }
     _ -> model
   }
 }
@@ -43,8 +64,18 @@ fn move_avatar(avatar: Vector) -> Vector {
 
 const center = Vec2(150.0, 150.0)
 
+const distance_between_dots = 20.0
+
 fn view(model: Model) -> p.Picture {
-  view_avatar(model.avatar)
+  p.combine(
+    list.append(
+      {
+        get_dots_around(model.avatar.pos)
+        |> list.map(view_dot)
+      },
+      [view_avatar(model.avatar)],
+    ),
+  )
   |> p.translate_xy(center.x, center.y)
 }
 
@@ -53,4 +84,34 @@ fn view_avatar(avatar: Vector) -> p.Picture {
   |> p.fill(colour.purple)
   |> p.stroke_none
   |> p.translate_xy(avatar.pos.x, avatar.pos.y)
+}
+
+fn view_dot(pos: Vec2(Float)) {
+  p.circle(1.0)
+  |> p.fill(colour.black)
+  |> p.stroke_none
+  |> p.translate_xy(pos.x, pos.y)
+}
+
+fn get_dots_around(pos: Vec2(Float)) {
+  let range = list.range(-10, 10)
+  let x_base = float.floor(pos.x /. distance_between_dots)
+  let y_base = float.floor(pos.y /. distance_between_dots)
+
+  range
+  |> list.flat_map(fn(x_offset) {
+    let x_offset_float = int.to_float(x_offset)
+
+    range
+    |> list.map(fn(y_offset) {
+      let y_offset_float = int.to_float(y_offset)
+
+      Vec2(
+        { x_offset_float *. distance_between_dots }
+          +. { x_base *. distance_between_dots },
+        { y_offset_float *. distance_between_dots }
+          +. { y_base *. distance_between_dots },
+      )
+    })
+  })
 }
