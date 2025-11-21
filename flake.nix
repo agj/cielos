@@ -20,7 +20,7 @@
             pkgs.gleam
             pkgs.just
             pkgs.nushell
-            pkgs.simple-http-server
+            pkgs.http-server
           ];
         };
       }

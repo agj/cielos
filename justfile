@@ -9,6 +9,5 @@ build:
 # Start development server.
 develop: build
     #!/usr/bin/env nu
-    simple-http-server . --index --silent
-    | lines
+    http-server . | lines | each { print $in }
     | interleave { watch ./src --glob='**/*.gleam' { just build } }
