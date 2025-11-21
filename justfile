@@ -2,7 +2,7 @@
 @default:
     just --list --unsorted
 
-# Builds files to `dist` folder.
+# Build JS files.
 build:
     gleam build
 
