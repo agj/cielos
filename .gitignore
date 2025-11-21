@@ -1,0 +1,9 @@
+# Gleam.
+*.beam
+*.ez
+/build/
+erl_crash.dump
+
+# Tools.
+.direnv/
+.helix/

@@ -1,0 +1,16 @@
+name = "app"
+version = "1.0.0"
+target = "javascript"
+
+# For a full reference of all the available options, you can have a look at
+# https://gleam.run/writing-gleam/gleam-toml/.
+
+[dependencies]
+gleam_stdlib = ">= 0.58.0 and < 2.0.0"
+gleam_community_colour = ">= 2.0.0 and < 3.0.0"
+gleam_yielder = ">= 1.1.0 and < 2.0.0"
+prng = ">= 4.0.1 and < 5.0.0"
+paint = ">= 1.0.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
