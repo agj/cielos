@@ -17,13 +17,14 @@ fn init(_config: canvas.Config) -> Model {
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.0),
     mouse_pos: Vec2(0.0, 0.0),
+    last_time: 0.0,
   )
 }
 
 // MODEL
 
 type Model {
-  Model(avatar: Vector, mouse_pos: Vec2(Float))
+  Model(avatar: Vector, mouse_pos: Vec2(Float), last_time: Float)
 }
 
 type Vector {
@@ -34,7 +35,13 @@ type Vector {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
-    // event.Tick(t) -> Model(..model, avatar: move_avatar(model.avatar))
+    event.Tick(current_time) ->
+      Model(
+        ..model,
+        last_time: current_time,
+        avatar: move_avatar(model.avatar, current_time -. model.last_time),
+      )
+
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
     event.MousePressed(event.MouseButtonLeft) -> {
@@ -56,8 +63,12 @@ fn update(model: Model, event: event.Event) -> Model {
   }
 }
 
-fn move_avatar(avatar: Vector) -> Vector {
-  Vector(pos: vec2f.zero, dir: 0.0)
+fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
+  Vector(
+    ..avatar,
+    pos: avatar.pos
+      |> vec2f.add(Vec2(0.0, -0.01 *. delta_time)),
+  )
 }
 
 // VIEW
