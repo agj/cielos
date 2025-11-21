@@ -7,5 +7,8 @@ build:
     gleam build
 
 # Start development server.
-develop:
-    gleam run
+develop: build
+    #!/usr/bin/env nu
+    simple-http-server . --index --silent
+    | lines
+    | interleave { watch ./src --glob='**/*.gleam' { just build } }

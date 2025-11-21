@@ -19,6 +19,8 @@
             pkgs.beam28Packages.rebar3
             pkgs.gleam
             pkgs.just
+            pkgs.nushell
+            pkgs.simple-http-server
           ];
         };
       }
