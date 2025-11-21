@@ -21,6 +21,12 @@ fn init(_config: canvas.Config) -> Model {
   )
 }
 
+// CONSTANTS
+
+const center = Vec2(150.0, 150.0)
+
+const distance_between_dots = 20.0
+
 // MODEL
 
 type Model {
@@ -73,10 +79,6 @@ fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
 
 // VIEW
 
-const center = Vec2(150.0, 150.0)
-
-const distance_between_dots = 20.0
-
 fn view(model: Model) -> p.Picture {
   p.combine(
     list.append(
@@ -87,7 +89,11 @@ fn view(model: Model) -> p.Picture {
       [view_avatar(model.avatar)],
     ),
   )
-  |> p.translate_xy(center.x, center.y)
+  // Center view on avatar.
+  |> p.translate_xy(
+    center.x -. model.avatar.pos.x,
+    center.y -. model.avatar.pos.y,
+  )
 }
 
 fn view_avatar(avatar: Vector) -> p.Picture {
