@@ -28,6 +28,10 @@ const center = Vec2(150.0, 150.0)
 
 const distance_between_dots = 20.0
 
+const speed = 0.08
+
+const rotation_speed = 0.09
+
 // MODEL
 
 type Model {
@@ -73,14 +77,14 @@ fn update(model: Model, event: event.Event) -> Model {
 }
 
 fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
-  let r = 0.01 *. delta_time
+  let r = speed *. delta_time
   let #(tx, ty) = maths.polar_to_cartesian(r, avatar.dir)
 
   Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
 }
 
 fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
-  Vector(..avatar, dir: avatar.dir +. { 0.05 *. direction })
+  Vector(..avatar, dir: avatar.dir +. { rotation_speed *. direction })
 }
 
 // VIEW
