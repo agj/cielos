@@ -15,8 +15,11 @@ pub fn main() {
 }
 
 fn init(_config: canvas.Config) -> Model {
+  let dir = 0.8 *. maths.tau()
+
   Model(
-    avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.8 *. maths.tau()),
+    avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
+    camera_dir: dir,
     mouse_pos: Vec2(0.0, 0.0),
     last_time: 0.0,
   )
@@ -35,7 +38,12 @@ const rotation_speed = 0.09
 // MODEL
 
 type Model {
-  Model(avatar: Vector, mouse_pos: Vec2(Float), last_time: Float)
+  Model(
+    avatar: Vector,
+    camera_dir: Float,
+    mouse_pos: Vec2(Float),
+    last_time: Float,
+  )
 }
 
 type Vector {
@@ -46,12 +54,17 @@ type Vector {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
-    event.Tick(current_time) ->
+    event.Tick(current_time) -> {
+      let new_camera_dir =
+        { model.avatar.dir *. 0.1 } +. { model.camera_dir *. 0.9 }
+
       Model(
         ..model,
         last_time: current_time,
         avatar: move_avatar(model.avatar, current_time -. model.last_time),
+        camera_dir: new_camera_dir,
       )
+    }
 
     event.KeyboardPressed(event.KeyLeftArrow) ->
       Model(..model, avatar: rotate_avatar(model.avatar, -1.0))
@@ -106,7 +119,7 @@ fn view(model: Model) -> p.Picture {
   )
   // Rotate to follow avatar direction.
   |> p.rotate(
-    p.angle_rad(float.negate(model.avatar.dir +. { maths.tau() *. 0.25 })),
+    p.angle_rad(float.negate(model.camera_dir +. { maths.tau() *. 0.25 })),
   )
   // Center.
   |> p.translate_xy(center.x, center.y)
