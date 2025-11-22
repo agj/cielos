@@ -19,7 +19,7 @@ fn init(_config: canvas.Config) -> Model {
 
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
-    camera_dir: dir,
+    camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     mouse_pos: Vec2(0.0, 0.0),
     last_time: 0.0,
   )
@@ -40,7 +40,7 @@ const rotation_speed = 0.09
 type Model {
   Model(
     avatar: Vector,
-    camera_dir: Float,
+    camera: Camera,
     mouse_pos: Vec2(Float),
     last_time: Float,
   )
@@ -50,24 +50,31 @@ type Vector {
   Vector(pos: Vec2(Float), dir: Float)
 }
 
+type Camera {
+  Camera(lagging_dir: Float, start_move_time: Float)
+}
+
 // UPDATE
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
     event.Tick(current_time) -> {
-      let new_camera_dir =
-        { model.avatar.dir *. 0.1 } +. { model.camera_dir *. 0.9 }
-
       Model(
         ..model,
         last_time: current_time,
         avatar: move_avatar(model.avatar, current_time -. model.last_time),
-        camera_dir: new_camera_dir,
       )
     }
 
     event.KeyboardPressed(event.KeyLeftArrow) ->
-      Model(..model, avatar: rotate_avatar(model.avatar, -1.0))
+      Model(
+        ..model,
+        avatar: rotate_avatar(model.avatar, -1.0),
+        camera: Camera(
+          lagging_dir: model.avatar.dir,
+          start_move_time: model.last_time,
+        ),
+      )
 
     event.KeyboardPressed(event.KeyRightArrow) ->
       Model(..model, avatar: rotate_avatar(model.avatar, 1.0))
@@ -103,6 +110,9 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
+  let camera_dir =
+    get_camera_dir(model.camera, model.avatar.dir, model.last_time)
+
   p.combine(
     list.append(
       {
@@ -119,10 +129,35 @@ fn view(model: Model) -> p.Picture {
   )
   // Rotate to follow avatar direction.
   |> p.rotate(
-    p.angle_rad(float.negate(model.camera_dir +. { maths.tau() *. 0.25 })),
+    p.angle_rad(float.negate(
+      camera_dir
+      // Correction to make it point upward.
+      +. { maths.tau() *. 0.25 },
+    )),
   )
   // Center.
   |> p.translate_xy(center.x, center.y)
+}
+
+fn get_camera_dir(
+  camera: Camera,
+  avatar_dir: Float,
+  current_time: Float,
+) -> Float {
+  let total_time = 200.0
+  let start_time = camera.start_move_time
+  let end_time = start_time +. total_time
+
+  case current_time >=. end_time {
+    True -> avatar_dir
+
+    False -> {
+      let rotation_progress = { current_time -. start_time } /. total_time
+
+      { avatar_dir *. rotation_progress }
+      +. { camera.lagging_dir *. { 1.0 -. rotation_progress } }
+    }
+  }
 }
 
 fn view_avatar(avatar: Vector) -> p.Picture {
