@@ -132,7 +132,7 @@ fn change_speed(model: Model, direction: Float) -> Model {
   Model(
     ..model,
     speed: float.clamp(
-      model.speed +. { direction *. 0.002 },
+      model.speed +. { direction *. { model.speed *. 0.05 } },
       min: min_speed,
       max: max_speed,
     ),
