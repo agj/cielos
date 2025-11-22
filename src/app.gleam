@@ -1,5 +1,6 @@
 import gleam/float
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -48,6 +49,12 @@ fn update(model: Model, event: event.Event) -> Model {
         avatar: move_avatar(model.avatar, current_time -. model.last_time),
       )
 
+    event.KeyboardPressed(event.KeyLeftArrow) ->
+      Model(..model, avatar: rotate_avatar(model.avatar, -1.0))
+
+    event.KeyboardPressed(event.KeyRightArrow) ->
+      Model(..model, avatar: rotate_avatar(model.avatar, 1.0))
+
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
     event.MousePressed(event.MouseButtonLeft) ->
@@ -70,6 +77,10 @@ fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
   let #(tx, ty) = maths.polar_to_cartesian(r, avatar.dir)
 
   Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
+}
+
+fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
+  Vector(..avatar, dir: avatar.dir +. { 0.05 *. direction })
 }
 
 // VIEW
