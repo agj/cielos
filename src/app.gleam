@@ -99,8 +99,12 @@ fn pressed_arrow_key(model: Model, direction: Float) -> Model {
     ..model,
     avatar: rotate_avatar(model.avatar, direction),
     camera: Camera(
-      lagging_dir: model.avatar.dir,
       start_move_time: model.current_time,
+      lagging_dir: get_camera_dir(
+        model.camera,
+        avatar_dir: model.avatar.dir,
+        current_time: model.current_time,
+      ),
     ),
   )
 }
@@ -129,7 +133,11 @@ fn view(model: Model) -> p.Picture {
   // Rotate to follow avatar direction.
   |> p.rotate(
     p.angle_rad(float.negate(
-      get_camera_dir(model.camera, model.avatar.dir, model.current_time)
+      get_camera_dir(
+        model.camera,
+        avatar_dir: model.avatar.dir,
+        current_time: model.current_time,
+      )
       // Correction to make it point upward.
       +. { maths.tau() *. 0.25 },
     )),
@@ -140,10 +148,10 @@ fn view(model: Model) -> p.Picture {
 
 fn get_camera_dir(
   camera: Camera,
-  avatar_dir: Float,
-  current_time: Float,
+  avatar_dir avatar_dir: Float,
+  current_time current_time: Float,
 ) -> Float {
-  let total_time = 400.0
+  let total_time = 200.0
   let start_time = camera.start_move_time
   let end_time = start_time +. total_time
 
