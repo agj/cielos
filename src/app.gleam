@@ -66,18 +66,9 @@ fn update(model: Model, event: event.Event) -> Model {
       )
     }
 
-    event.KeyboardPressed(event.KeyLeftArrow) ->
-      Model(
-        ..model,
-        avatar: rotate_avatar(model.avatar, -1.0),
-        camera: Camera(
-          lagging_dir: model.avatar.dir,
-          start_move_time: model.current_time,
-        ),
-      )
+    event.KeyboardPressed(event.KeyLeftArrow) -> pressed_arrow_key(model, -1.0)
 
-    event.KeyboardPressed(event.KeyRightArrow) ->
-      Model(..model, avatar: rotate_avatar(model.avatar, 1.0))
+    event.KeyboardPressed(event.KeyRightArrow) -> pressed_arrow_key(model, 1.0)
 
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
@@ -103,6 +94,17 @@ fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
   Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
 }
 
+fn pressed_arrow_key(model: Model, direction: Float) -> Model {
+  Model(
+    ..model,
+    avatar: rotate_avatar(model.avatar, direction),
+    camera: Camera(
+      lagging_dir: model.avatar.dir,
+      start_move_time: model.current_time,
+    ),
+  )
+}
+
 fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
   Vector(..avatar, dir: avatar.dir +. { rotation_speed *. direction })
 }
@@ -110,9 +112,6 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
-  let camera_dir =
-    get_camera_dir(model.camera, model.avatar.dir, model.current_time)
-
   p.combine(
     list.append(
       {
@@ -130,7 +129,7 @@ fn view(model: Model) -> p.Picture {
   // Rotate to follow avatar direction.
   |> p.rotate(
     p.angle_rad(float.negate(
-      camera_dir
+      get_camera_dir(model.camera, model.avatar.dir, model.current_time)
       // Correction to make it point upward.
       +. { maths.tau() *. 0.25 },
     )),
@@ -144,7 +143,7 @@ fn get_camera_dir(
   avatar_dir: Float,
   current_time: Float,
 ) -> Float {
-  let total_time = 200.0
+  let total_time = 400.0
   let start_time = camera.start_move_time
   let end_time = start_time +. total_time
 
