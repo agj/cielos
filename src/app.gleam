@@ -20,6 +20,7 @@ fn init(_config: canvas.Config) -> Model {
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
+    speed: 0.08,
     mouse_pos: Vec2(0.0, 0.0),
     current_time: 0.0,
   )
@@ -31,7 +32,9 @@ const center = Vec2(150.0, 150.0)
 
 const distance_between_dots = 20.0
 
-const speed = 0.08
+const min_speed = 0.02
+
+const max_speed = 0.4
 
 const rotation_speed = 0.09
 
@@ -41,6 +44,7 @@ type Model {
   Model(
     avatar: Vector,
     camera: Camera,
+    speed: Float,
     mouse_pos: Vec2(Float),
     current_time: Float,
   )
@@ -62,13 +66,21 @@ fn update(model: Model, event: event.Event) -> Model {
       Model(
         ..model,
         current_time: updated_time,
-        avatar: move_avatar(model.avatar, updated_time -. model.current_time),
+        avatar: move_avatar(
+          model.avatar,
+          speed: model.speed,
+          delta_time: updated_time -. model.current_time,
+        ),
       )
     }
 
-    event.KeyboardPressed(event.KeyLeftArrow) -> pressed_arrow_key(model, -1.0)
+    event.KeyboardPressed(event.KeyLeftArrow) -> change_rotation(model, -1.0)
 
-    event.KeyboardPressed(event.KeyRightArrow) -> pressed_arrow_key(model, 1.0)
+    event.KeyboardPressed(event.KeyRightArrow) -> change_rotation(model, 1.0)
+
+    event.KeyboardPressed(event.KeyUpArrow) -> change_speed(model, 1.0)
+
+    event.KeyboardPressed(event.KeyDownArrow) -> change_speed(model, -1.0)
 
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
@@ -87,14 +99,18 @@ fn update(model: Model, event: event.Event) -> Model {
   }
 }
 
-fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
+fn move_avatar(
+  avatar: Vector,
+  speed speed: Float,
+  delta_time delta_time: Float,
+) -> Vector {
   let r = speed *. delta_time
   let #(tx, ty) = maths.polar_to_cartesian(r, avatar.dir)
 
   Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
 }
 
-fn pressed_arrow_key(model: Model, direction: Float) -> Model {
+fn change_rotation(model: Model, direction: Float) -> Model {
   Model(
     ..model,
     avatar: rotate_avatar(model.avatar, direction),
@@ -105,6 +121,17 @@ fn pressed_arrow_key(model: Model, direction: Float) -> Model {
         avatar_dir: model.avatar.dir,
         current_time: model.current_time,
       ),
+    ),
+  )
+}
+
+fn change_speed(model: Model, direction: Float) -> Model {
+  Model(
+    ..model,
+    speed: float.clamp(
+      model.speed +. { direction *. 0.002 },
+      min: min_speed,
+      max: max_speed,
     ),
   )
 }
