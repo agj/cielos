@@ -21,7 +21,7 @@ fn init(_config: canvas.Config) -> Model {
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     mouse_pos: Vec2(0.0, 0.0),
-    last_time: 0.0,
+    current_time: 0.0,
   )
 }
 
@@ -42,7 +42,7 @@ type Model {
     avatar: Vector,
     camera: Camera,
     mouse_pos: Vec2(Float),
-    last_time: Float,
+    current_time: Float,
   )
 }
 
@@ -58,11 +58,11 @@ type Camera {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
-    event.Tick(current_time) -> {
+    event.Tick(updated_time) -> {
       Model(
         ..model,
-        last_time: current_time,
-        avatar: move_avatar(model.avatar, current_time -. model.last_time),
+        current_time: updated_time,
+        avatar: move_avatar(model.avatar, updated_time -. model.current_time),
       )
     }
 
@@ -72,7 +72,7 @@ fn update(model: Model, event: event.Event) -> Model {
         avatar: rotate_avatar(model.avatar, -1.0),
         camera: Camera(
           lagging_dir: model.avatar.dir,
-          start_move_time: model.last_time,
+          start_move_time: model.current_time,
         ),
       )
 
@@ -111,7 +111,7 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 
 fn view(model: Model) -> p.Picture {
   let camera_dir =
-    get_camera_dir(model.camera, model.avatar.dir, model.last_time)
+    get_camera_dir(model.camera, model.avatar.dir, model.current_time)
 
   p.combine(
     list.append(
