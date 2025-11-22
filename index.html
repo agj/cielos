@@ -9,21 +9,27 @@
     <style>
       html,
       body {
+        height: 100%;
         margin: 0;
         padding: 0;
         width: 100%;
-        height: 100%;
       }
 
       body {
-        display: flex;
         align-items: center;
+        display: flex;
         justify-content: center;
-        background-color: #fafafa;
       }
 
       canvas {
-        background-color: white;
+        background-color: #fafafa;
+        height: 100%;
+        object-fit: contain;
+        width: 100%;
+
+        /* Many browsers support either one or the other: */
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
       }
     </style>
     <canvas id="app" width="300" height="300"></canvas>

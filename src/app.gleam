@@ -1,6 +1,5 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -27,6 +26,10 @@ fn init(_config: canvas.Config) -> Model {
 }
 
 // CONSTANTS
+
+const width = 300.0
+
+const height = 300.0
 
 const center = Vec2(150.0, 150.0)
 
@@ -143,34 +146,43 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
-  p.combine(
-    list.append(
-      {
-        get_dots_around(model.avatar.pos)
-        |> list.map(view_dot)
-      },
-      [view_avatar(model.avatar)],
-    ),
-  )
-  // Put origin on avatar.
-  |> p.translate_xy(
-    float.negate(model.avatar.pos.x),
-    float.negate(model.avatar.pos.y),
-  )
-  // Rotate to follow avatar direction.
-  |> p.rotate(
-    p.angle_rad(float.negate(
-      get_camera_dir(
-        model.camera,
-        avatar_dir: model.avatar.dir,
-        current_time: model.current_time,
-      )
-      // Correction to make it point upward.
-      +. { maths.tau() *. 0.25 },
-    )),
-  )
-  // Center.
-  |> p.translate_xy(center.x, center.y)
+  let content =
+    p.combine(
+      list.append(
+        {
+          get_dots_around(model.avatar.pos)
+          |> list.map(view_dot)
+        },
+        [view_avatar(model.avatar)],
+      ),
+    )
+    // Put origin on avatar.
+    |> p.translate_xy(
+      float.negate(model.avatar.pos.x),
+      float.negate(model.avatar.pos.y),
+    )
+    // Rotate to follow avatar direction.
+    |> p.rotate(
+      p.angle_rad(float.negate(
+        get_camera_dir(
+          model.camera,
+          avatar_dir: model.avatar.dir,
+          current_time: model.current_time,
+        )
+        // Correction to make it point upward.
+        +. { maths.tau() *. 0.25 },
+      )),
+    )
+    // Center.
+    |> p.translate_xy(center.x, center.y)
+
+  p.combine([view_background(), content])
+}
+
+fn view_background() -> p.Picture {
+  p.rectangle(width, height)
+  |> p.fill(colour.white)
+  |> p.stroke_none
 }
 
 fn get_camera_dir(
