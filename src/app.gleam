@@ -1,8 +1,8 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam_community/colour
+import gleam_community/maths
 import paint as p
 import paint/canvas
 import paint/event
@@ -15,7 +15,7 @@ pub fn main() {
 
 fn init(_config: canvas.Config) -> Model {
   Model(
-    avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.0),
+    avatar: Vector(pos: Vec2(0.0, 0.0), dir: 0.8 *. maths.tau()),
     mouse_pos: Vec2(0.0, 0.0),
     last_time: 0.0,
   )
@@ -50,31 +50,26 @@ fn update(model: Model, event: event.Event) -> Model {
 
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
-    event.MousePressed(event.MouseButtonLeft) -> {
-      io.println(
-        float.to_string(model.mouse_pos.x)
-        <> ", "
-        <> float.to_string(model.mouse_pos.x),
-      )
+    event.MousePressed(event.MouseButtonLeft) ->
+      // Place avatar on click position.
       Model(
         ..model,
         avatar: Vector(
           ..model.avatar,
-          pos: model.mouse_pos
-            |> vec2f.subtract(center),
+          pos: vec2f.subtract(model.mouse_pos, center),
         ),
       )
-    }
+
+    // Ignore other events.
     _ -> model
   }
 }
 
 fn move_avatar(avatar: Vector, delta_time: Float) -> Vector {
-  Vector(
-    ..avatar,
-    pos: avatar.pos
-      |> vec2f.add(Vec2(0.0, -0.01 *. delta_time)),
-  )
+  let r = 0.01 *. delta_time
+  let #(tx, ty) = maths.polar_to_cartesian(r, avatar.dir)
+
+  Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
 }
 
 // VIEW
