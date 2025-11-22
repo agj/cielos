@@ -99,11 +99,17 @@ fn view(model: Model) -> p.Picture {
       [view_avatar(model.avatar)],
     ),
   )
-  // Center view on avatar.
+  // Put origin on avatar.
   |> p.translate_xy(
-    center.x -. model.avatar.pos.x,
-    center.y -. model.avatar.pos.y,
+    float.negate(model.avatar.pos.x),
+    float.negate(model.avatar.pos.y),
   )
+  // Rotate to follow avatar direction.
+  |> p.rotate(
+    p.angle_rad(float.negate(model.avatar.dir +. { maths.tau() *. 0.25 })),
+  )
+  // Center.
+  |> p.translate_xy(center.x, center.y)
 }
 
 fn view_avatar(avatar: Vector) -> p.Picture {
