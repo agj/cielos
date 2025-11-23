@@ -146,15 +146,23 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
+  let dots = get_dots_around(model.avatar.pos)
+
   let content =
     p.combine(
-      list.append(
-        {
-          get_dots_around(model.avatar.pos)
-          |> list.map(view_dot)
-        },
+      list.flatten([
+        list.map(dots, view_dot(
+          pos: _,
+          height: -1.0,
+          camera_pos: model.avatar.pos,
+        )),
         [view_avatar(model.avatar)],
-      ),
+        list.map(dots, view_dot(
+          pos: _,
+          height: 1.0,
+          camera_pos: model.avatar.pos,
+        )),
+      ]),
     )
     // Put origin on avatar.
     |> p.translate_xy(
@@ -213,11 +221,25 @@ fn view_avatar(avatar: Vector) -> p.Picture {
   |> p.translate_xy(avatar.pos.x, avatar.pos.y)
 }
 
-fn view_dot(pos: Vec2(Float)) {
+fn view_dot(
+  pos pos: Vec2(Float),
+  height height: Float,
+  camera_pos camera_pos: Vec2(Float),
+) {
+  let factor = case height >=. 0.0 {
+    True -> 1.0 +. { height *. 0.1 }
+    False -> -1.0 /. { height *. 1.0 }
+  }
+  let translation =
+    pos
+    |> vec2f.subtract(camera_pos)
+    |> vec2f.scale(factor)
+    |> vec2f.add(camera_pos)
+
   p.circle(1.0)
   |> p.fill(colour.black)
   |> p.stroke_none
-  |> p.translate_xy(pos.x, pos.y)
+  |> p.translate_xy(translation.x, translation.y)
 }
 
 fn get_dots_around(pos: Vec2(Float)) {
