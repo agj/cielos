@@ -146,6 +146,7 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
+  let distance_factor = 5.0
   let dots = get_dots_around(model.avatar.pos)
 
   let content =
@@ -153,13 +154,13 @@ fn view(model: Model) -> p.Picture {
       list.flatten([
         list.map(dots, view_dot(
           pos: _,
-          height: -1.0,
+          distance: 3.0 *. distance_factor,
           camera_pos: model.avatar.pos,
         )),
-        [view_avatar(model.avatar)],
+        [view_avatar(model.avatar, 2.0 *. distance_factor)],
         list.map(dots, view_dot(
           pos: _,
-          height: 1.0,
+          distance: 1.0 *. distance_factor,
           camera_pos: model.avatar.pos,
         )),
       ]),
@@ -193,6 +194,33 @@ fn view_background() -> p.Picture {
   |> p.stroke_none
 }
 
+fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
+  p.circle(15.0 *. get_scale(distance))
+  |> p.fill(colour.purple)
+  |> p.stroke_none
+  |> p.translate_xy(avatar.pos.x, avatar.pos.y)
+}
+
+fn view_dot(
+  pos pos: Vec2(Float),
+  distance distance: Float,
+  camera_pos camera_pos: Vec2(Float),
+) {
+  let scale = get_scale(distance)
+  let translation =
+    pos
+    |> vec2f.subtract(camera_pos)
+    |> vec2f.scale(scale)
+    |> vec2f.add(camera_pos)
+
+  p.circle(2.0 *. scale)
+  |> p.fill(colour.black)
+  |> p.stroke_none
+  |> p.translate_xy(translation.x, translation.y)
+}
+
+// UTILS
+
 fn get_camera_dir(
   camera: Camera,
   avatar_dir avatar_dir: Float,
@@ -212,34 +240,6 @@ fn get_camera_dir(
       +. { camera.lagging_dir *. { 1.0 -. rotation_progress } }
     }
   }
-}
-
-fn view_avatar(avatar: Vector) -> p.Picture {
-  p.circle(10.0)
-  |> p.fill(colour.purple)
-  |> p.stroke_none
-  |> p.translate_xy(avatar.pos.x, avatar.pos.y)
-}
-
-fn view_dot(
-  pos pos: Vec2(Float),
-  height height: Float,
-  camera_pos camera_pos: Vec2(Float),
-) {
-  let factor = case height >=. 0.0 {
-    True -> 1.0 +. { height *. 0.1 }
-    False -> -1.0 /. { height *. 1.0 }
-  }
-  let translation =
-    pos
-    |> vec2f.subtract(camera_pos)
-    |> vec2f.scale(factor)
-    |> vec2f.add(camera_pos)
-
-  p.circle(1.0)
-  |> p.fill(colour.black)
-  |> p.stroke_none
-  |> p.translate_xy(translation.x, translation.y)
 }
 
 fn get_dots_around(pos: Vec2(Float)) {
@@ -263,4 +263,10 @@ fn get_dots_around(pos: Vec2(Float)) {
       )
     })
   })
+}
+
+/// Gets a scale factor for an object that is `distance` units away from the
+/// camera.
+fn get_scale(distance: Float) -> Float {
+  1.0 /. { { distance /. 20.0 } +. 1.0 }
 }
