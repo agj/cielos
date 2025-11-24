@@ -164,7 +164,11 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
-  let camera = model.avatar
+  let camera =
+    Vector(
+      ..model.avatar,
+      dir: get_camera_dir(model.camera, model.avatar.dir, model.current_time),
+    )
   let picture = view_dot()
 
   let content =
