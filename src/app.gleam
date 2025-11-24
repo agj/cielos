@@ -1,6 +1,5 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -188,13 +187,6 @@ fn view_background() -> p.Picture {
   p.rectangle(width, height)
   |> p.fill(bg_color)
   |> p.stroke_none
-}
-
-fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
-  p.circle(15.0 *. get_scale(distance))
-  |> p.fill(colour.purple)
-  |> p.stroke_none
-  |> p.translate_xy(avatar.pos.x, avatar.pos.y)
 }
 
 fn view_dot() -> p.Picture {
