@@ -17,10 +17,24 @@ pub fn main() {
 fn init(_config: canvas.Config) -> Model {
   let dir = 0.8 *. maths.tau()
 
+  let dots =
+    list.range(0, 200)
+    |> list.map(fn(i) {
+      let i_f = int.to_float(i)
+      Object(
+        pos: pos_from_polar(
+          length: { i_f +. 1.0 } *. 2.0 +. 10.0,
+          angle: i_f /. 20.0 *. maths.tau(),
+        ),
+        height: maths.sin(i_f /. 5.0 *. maths.tau()),
+      )
+    })
+
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
-    speed: 0.08,
+    speed: 0.01,
+    dots:,
     mouse_pos: Vec2(0.0, 0.0),
     current_time: 0.0,
   )
@@ -34,7 +48,7 @@ const height = 300.0
 
 const center = Vec2(150.0, 150.0)
 
-const min_speed = 0.02
+const min_speed = 0.005
 
 const max_speed = 0.4
 
@@ -47,6 +61,7 @@ type Model {
     avatar: Vector,
     camera: Camera,
     speed: Float,
+    dots: List(Object),
     mouse_pos: Vec2(Float),
     current_time: Float,
   )
@@ -154,20 +169,8 @@ fn view(model: Model) -> p.Picture {
 
   let content =
     p.combine(
-      list.range(0, 200)
-      |> list.map(fn(i) {
-        let i_f = int.to_float(i)
-        let obj =
-          Object(
-            pos: pos_from_polar(
-              length: { i_f +. 1.0 } *. 2.0 +. 10.0,
-              angle: i_f /. 20.0 *. maths.tau(),
-            ),
-            height: maths.sin(i_f /. 5.0 *. maths.tau()),
-          )
-
-        view_object(obj, camera:, picture:)
-      }),
+      model.dots
+      |> list.map(view_object(_, camera:, picture:)),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
