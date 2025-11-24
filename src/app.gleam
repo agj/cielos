@@ -175,11 +175,6 @@ fn view(model: Model) -> p.Picture {
   p.combine([view_background(), content])
 }
 
-fn pos_from_polar(length length: Float, angle angle: Float) -> Vec2(Float) {
-  let #(x, y) = maths.polar_to_cartesian(length, angle)
-  Vec2(x, y)
-}
-
 fn view_background() -> p.Picture {
   p.rectangle(width, height)
   |> p.fill(colour.white)
@@ -234,28 +229,6 @@ fn view_object(
   }
 }
 
-fn angle_between(
-  from_x from_x: Float,
-  from_y from_y: Float,
-  to_x to_x: Float,
-  to_y to_y: Float,
-) -> Float {
-  maths.atan2(to_y -. from_y, to_x -. from_x)
-}
-
-/// Normalizes an angle in radians between pi (inclusive) and -pi (exclusive).
-/// This makes it easier to compare and interpolate between angles.
-fn normalize_angle(radians: Float) -> Float {
-  let tau = maths.tau()
-  let pi = maths.pi()
-  let minus_pi = float.negate(pi)
-  case radians {
-    r if r >. pi -> normalize_angle(r -. tau)
-    r if r <=. minus_pi -> normalize_angle(r +. tau)
-    r -> r
-  }
-}
-
 // UTILS
 
 fn get_camera_dir(
@@ -287,4 +260,31 @@ fn get_scale(distance: Float) -> Float {
   // How softly the scale decreases as the distance increases.
   let gentleness = 0.2
   peak /. { { distance /. gentleness } +. 1.0 }
+}
+
+fn pos_from_polar(length length: Float, angle angle: Float) -> Vec2(Float) {
+  let #(x, y) = maths.polar_to_cartesian(length, angle)
+  Vec2(x, y)
+}
+
+fn angle_between(
+  from_x from_x: Float,
+  from_y from_y: Float,
+  to_x to_x: Float,
+  to_y to_y: Float,
+) -> Float {
+  maths.atan2(to_y -. from_y, to_x -. from_x)
+}
+
+/// Normalizes an angle in radians between pi (inclusive) and -pi (exclusive).
+/// This makes it easier to compare and interpolate between angles.
+fn normalize_angle(radians: Float) -> Float {
+  let tau = maths.tau()
+  let pi = maths.pi()
+  let minus_pi = float.negate(pi)
+  case radians {
+    r if r >. pi -> normalize_angle(r -. tau)
+    r if r <=. minus_pi -> normalize_angle(r +. tau)
+    r -> r
+  }
 }
