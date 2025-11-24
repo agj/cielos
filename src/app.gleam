@@ -34,8 +34,6 @@ const height = 300.0
 
 const center = Vec2(150.0, 150.0)
 
-const distance_between_dots = 20.0
-
 const min_speed = 0.02
 
 const max_speed = 0.4
@@ -176,29 +174,22 @@ fn view(model: Model) -> p.Picture {
   let o = view_object(_, camera:, picture:)
 
   let content =
-    p.combine([
-      o(Object(pos: Vec2(10.0, 0.0), height: 10.0)),
-      o(Object(pos: Vec2(10.0, 0.0), height: 0.0)),
-      o(Object(pos: Vec2(10.0, 0.0), height: -10.0)),
+    p.combine(
+      list.range(0, 20)
+      |> list.map(fn(i) {
+        let #(x, y) =
+          maths.polar_to_cartesian(10.0, int.to_float(i) /. 20.0 *. maths.tau())
 
-      o(Object(pos: Vec2(-10.0, 0.0), height: 10.0)),
-      o(Object(pos: Vec2(-10.0, 0.0), height: 0.0)),
-      o(Object(pos: Vec2(-10.0, 0.0), height: -10.0)),
-
-      o(Object(pos: Vec2(0.0, 10.0), height: 10.0)),
-      o(Object(pos: Vec2(0.0, 10.0), height: 0.0)),
-      o(Object(pos: Vec2(0.0, 10.0), height: -10.0)),
-
-      o(Object(pos: Vec2(0.0, -5.0), height: 10.0)),
-      o(Object(pos: Vec2(0.0, -5.0), height: 0.0)),
-      o(Object(pos: Vec2(0.0, -5.0), height: -10.0)),
-      o(Object(pos: Vec2(0.0, -10.0), height: 10.0)),
-      o(Object(pos: Vec2(0.0, -10.0), height: 0.0)),
-      o(Object(pos: Vec2(0.0, -10.0), height: -10.0)),
-      o(Object(pos: Vec2(0.0, -20.0), height: 10.0)),
-      o(Object(pos: Vec2(0.0, -20.0), height: 0.0)),
-      o(Object(pos: Vec2(0.0, -20.0), height: -10.0)),
-    ])
+        view_object(
+          Object(
+            pos: Vec2(x, y),
+            height: maths.sin(int.to_float(i) /. 20.0 *. maths.tau()),
+          ),
+          camera:,
+          picture:,
+        )
+      }),
+    )
     // Center.
     |> p.translate_xy(center.x, center.y)
 
@@ -229,10 +220,14 @@ fn view_object(
   camera camera: Vector,
   picture picture: p.Picture,
 ) -> p.Picture {
-  let angle_to_object = normalize_angle(vec2f.angle(camera.pos, object.pos))
+  let half_visible_angle = maths.degrees_to_radians(45.0)
+  let angle_to_object =
+    object.pos
+    |> vec2f.subtract(camera.pos)
+    |> fn(v) { normalize_angle(maths.atan2(v.y, v.x)) }
   let angle = normalize_angle(angle_to_object -. normalize_angle(camera.dir))
 
-  case float.absolute_value(angle) >. { 0.4 *. maths.tau() } {
+  case float.absolute_value(angle) >. half_visible_angle {
     True ->
       // Object is not within camera's visible area.
       p.blank()
@@ -287,32 +282,6 @@ fn get_camera_dir(
       +. { camera.lagging_dir *. { 1.0 -. rotation_progress } }
     }
   }
-}
-
-fn get_dots(around center: Vec2(Float), height height: Float) -> List(Object) {
-  let range = list.range(-10, 10)
-  let x_base = float.floor(center.x /. distance_between_dots)
-  let y_base = float.floor(center.y /. distance_between_dots)
-
-  range
-  |> list.flat_map(fn(x_offset) {
-    let x_offset_float = int.to_float(x_offset)
-
-    range
-    |> list.map(fn(y_offset) {
-      let y_offset_float = int.to_float(y_offset)
-
-      Object(
-        height:,
-        pos: Vec2(
-          { x_offset_float *. distance_between_dots }
-            +. { x_base *. distance_between_dots },
-          { y_offset_float *. distance_between_dots }
-            +. { y_base *. distance_between_dots },
-        ),
-      )
-    })
-  })
 }
 
 /// Gets a scale factor for an object that is `distance` units away from the
