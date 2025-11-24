@@ -154,25 +154,30 @@ fn view(model: Model) -> p.Picture {
 
   let content =
     p.combine(
-      list.range(0, 20)
+      list.range(0, 200)
       |> list.map(fn(i) {
-        let #(x, y) =
-          maths.polar_to_cartesian(10.0, int.to_float(i) /. 20.0 *. maths.tau())
-
-        view_object(
+        let i_f = int.to_float(i)
+        let obj =
           Object(
-            pos: Vec2(x, y),
-            height: maths.sin(int.to_float(i) /. 20.0 *. maths.tau()),
-          ),
-          camera:,
-          picture:,
-        )
+            pos: pos_from_polar(
+              length: { i_f +. 1.0 } *. 2.0 +. 10.0,
+              angle: i_f /. 20.0 *. maths.tau(),
+            ),
+            height: maths.sin(i_f /. 5.0 *. maths.tau()),
+          )
+
+        view_object(obj, camera:, picture:)
       }),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
 
   p.combine([view_background(), content])
+}
+
+fn pos_from_polar(length length: Float, angle angle: Float) -> Vec2(Float) {
+  let #(x, y) = maths.polar_to_cartesian(length, angle)
+  Vec2(x, y)
 }
 
 fn view_background() -> p.Picture {
