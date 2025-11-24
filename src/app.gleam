@@ -179,8 +179,10 @@ fn view(model: Model) -> p.Picture {
 }
 
 fn view_background() -> p.Picture {
+  let assert Ok(bg_color) = colour.from_hsl(0.85, 0.5, 0.96)
+
   p.rectangle(width, height)
-  |> p.fill(colour.white)
+  |> p.fill(bg_color)
   |> p.stroke_none
 }
 
@@ -192,8 +194,10 @@ fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
 }
 
 fn view_dot() -> p.Picture {
+  let assert Ok(dot_color) = colour.from_hsl(0.12, 1.0, 0.7)
+
   p.circle(300.0)
-  |> p.fill(colour.black)
+  |> p.fill(dot_color)
   |> p.stroke_none
 }
 
