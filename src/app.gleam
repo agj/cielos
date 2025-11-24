@@ -189,7 +189,7 @@ fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
 }
 
 fn view_dot() -> p.Picture {
-  p.circle(2.0)
+  p.circle(300.0)
   |> p.fill(colour.black)
   |> p.stroke_none
 }
@@ -210,7 +210,7 @@ fn view_object(
       p.blank()
 
     False -> {
-      // Distance between camera and object (hypotenuse).
+      // Distance between camera and object.
       let distance_x =
         float.absolute_value(vec2f.distance(camera.pos, object.pos))
       let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
@@ -277,5 +277,9 @@ fn get_camera_dir(
 /// Gets a scale factor for an object that is `distance` units away from the
 /// camera.
 fn get_scale(distance: Float) -> Float {
-  1.0 /. { { distance /. 100.0 } +. 1.0 }
+  // Maximum possible scale.
+  let peak = 1.0
+  // How softly the scale decreases as the distance increases.
+  let gentleness = 0.2
+  peak /. { { distance /. gentleness } +. 1.0 }
 }
