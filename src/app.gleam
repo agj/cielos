@@ -1,5 +1,6 @@
 import gleam/float
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -150,24 +151,54 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
-  let distance_factor = 5.0
-  let height_factor = 1.0
-  let camera_vector = Vector(pos: model.avatar.pos, dir: model.avatar.dir)
+  // let height_factor = 1.0
+  // let camera_vector = Vector(pos: model.avatar.pos, dir: model.avatar.dir)
+
+  // let content =
+  //   p.combine(
+  //     list.flatten([
+  //       list.map(
+  //         get_dots(around: model.avatar.pos, height: -3.0 *. height_factor),
+  //         view_object(_, camera: camera_vector, picture: view_dot()),
+  //       ),
+  //       list.map(
+  //         get_dots(around: model.avatar.pos, height: 3.0 *. height_factor),
+  //         view_object(_, camera: camera_vector, picture: view_dot()),
+  //       ),
+  //       // [view_object(model.avatar, camera: camera_vector, picture: view_avatar())],
+  //     ]),
+  //   )
+  //   // Center.
+  //   |> p.translate_xy(center.x, center.y)
+
+  let camera = Vector(pos: Vec2(0.0, 0.0), dir: model.avatar.dir)
+  let picture = view_dot()
+  let o = view_object(_, camera:, picture:)
 
   let content =
-    p.combine(
-      list.flatten([
-        list.map(
-          get_dots(around: model.avatar.pos, height: 1.0 *. height_factor),
-          view_dot(_, camera: camera_vector),
-        ),
-        [view_avatar(model.avatar, 2.0 *. distance_factor)],
-        list.map(
-          get_dots(around: model.avatar.pos, height: 3.0 *. height_factor),
-          view_dot(_, camera: camera_vector),
-        ),
-      ]),
-    )
+    p.combine([
+      o(Object(pos: Vec2(10.0, 0.0), height: 10.0)),
+      o(Object(pos: Vec2(10.0, 0.0), height: 0.0)),
+      o(Object(pos: Vec2(10.0, 0.0), height: -10.0)),
+
+      o(Object(pos: Vec2(-10.0, 0.0), height: 10.0)),
+      o(Object(pos: Vec2(-10.0, 0.0), height: 0.0)),
+      o(Object(pos: Vec2(-10.0, 0.0), height: -10.0)),
+
+      o(Object(pos: Vec2(0.0, 10.0), height: 10.0)),
+      o(Object(pos: Vec2(0.0, 10.0), height: 0.0)),
+      o(Object(pos: Vec2(0.0, 10.0), height: -10.0)),
+
+      o(Object(pos: Vec2(0.0, -5.0), height: 10.0)),
+      o(Object(pos: Vec2(0.0, -5.0), height: 0.0)),
+      o(Object(pos: Vec2(0.0, -5.0), height: -10.0)),
+      o(Object(pos: Vec2(0.0, -10.0), height: 10.0)),
+      o(Object(pos: Vec2(0.0, -10.0), height: 0.0)),
+      o(Object(pos: Vec2(0.0, -10.0), height: -10.0)),
+      o(Object(pos: Vec2(0.0, -20.0), height: 10.0)),
+      o(Object(pos: Vec2(0.0, -20.0), height: 0.0)),
+      o(Object(pos: Vec2(0.0, -20.0), height: -10.0)),
+    ])
     // Center.
     |> p.translate_xy(center.x, center.y)
 
@@ -187,33 +218,36 @@ fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
   |> p.translate_xy(avatar.pos.x, avatar.pos.y)
 }
 
-fn view_dot(dot: Object, camera camera: Vector) -> p.Picture {
-  let camera_dir = normalize_angle(camera.dir)
-  let angle_to_dot = normalize_angle(vec2f.angle(camera.pos, dot.pos))
-  let angle = normalize_angle(angle_to_dot -. camera_dir)
-  let angle_difference = maths.absolute_difference(camera_dir, angle_to_dot)
+fn view_dot() -> p.Picture {
+  p.circle(2.0)
+  |> p.fill(colour.black)
+  |> p.stroke_none
+}
 
-  case angle_difference >. { 0.2 *. maths.tau() } {
+fn view_object(
+  object: Object,
+  camera camera: Vector,
+  picture picture: p.Picture,
+) -> p.Picture {
+  let angle_to_object = normalize_angle(vec2f.angle(camera.pos, object.pos))
+  let angle = normalize_angle(angle_to_object -. normalize_angle(camera.dir))
+
+  case float.absolute_value(angle) >. { 0.4 *. maths.tau() } {
     True ->
       // Object is not within camera's visible area.
       p.blank()
 
     False -> {
-      // Distance between camera and dot (hypotenuse).
-      let distance = vec2f.distance(camera.pos, dot.pos)
-      // Adjacent side length.
-      let plane_distance = maths.cos(angle_difference) *. distance
-      // Opposite side length. Distance from camera focus center.
-      let lateral_distance = maths.sin(angle) *. distance
+      // Distance between camera and object (hypotenuse).
+      let distance =
+        float.absolute_value(vec2f.distance(camera.pos, object.pos))
 
-      let scale = get_scale(plane_distance)
+      let scale = get_scale(distance)
       let translation =
-        Vec2(lateral_distance, dot.height *. 1.0)
-        |> vec2f.scale(scale)
+        Vec2(angle /. maths.tau() *. 500.0, object.height *. 10.0 *. scale)
 
-      p.circle(2.0 *. scale)
-      |> p.fill(colour.black)
-      |> p.stroke_none
+      picture
+      |> p.scale_uniform(scale)
       |> p.translate_xy(translation.x, translation.y)
     }
   }
@@ -222,11 +256,12 @@ fn view_dot(dot: Object, camera camera: Vector) -> p.Picture {
 /// Normalizes an angle in radians between pi (inclusive) and -pi (exclusive).
 /// This makes it easier to compare and interpolate between angles.
 fn normalize_angle(radians: Float) -> Float {
+  let tau = maths.tau()
   let pi = maths.pi()
   let minus_pi = float.negate(pi)
   case radians {
-    r if r >. pi -> normalize_angle(r -. pi)
-    r if r <=. minus_pi -> normalize_angle(r +. pi)
+    r if r >. pi -> normalize_angle(r -. tau)
+    r if r <=. minus_pi -> normalize_angle(r +. tau)
     r -> r
   }
 }
@@ -255,7 +290,7 @@ fn get_camera_dir(
 }
 
 fn get_dots(around center: Vec2(Float), height height: Float) -> List(Object) {
-  let range = list.range(-40, 40)
+  let range = list.range(-10, 10)
   let x_base = float.floor(center.x /. distance_between_dots)
   let y_base = float.floor(center.y /. distance_between_dots)
 
@@ -283,5 +318,5 @@ fn get_dots(around center: Vec2(Float), height height: Float) -> List(Object) {
 /// Gets a scale factor for an object that is `distance` units away from the
 /// camera.
 fn get_scale(distance: Float) -> Float {
-  1.0 /. { { distance /. 20.0 } +. 1.0 }
+  1.0 /. { { distance /. 100.0 } +. 1.0 }
 }
