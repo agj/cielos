@@ -149,29 +149,8 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 // VIEW
 
 fn view(model: Model) -> p.Picture {
-  // let height_factor = 1.0
-  // let camera_vector = Vector(pos: model.avatar.pos, dir: model.avatar.dir)
-
-  // let content =
-  //   p.combine(
-  //     list.flatten([
-  //       list.map(
-  //         get_dots(around: model.avatar.pos, height: -3.0 *. height_factor),
-  //         view_object(_, camera: camera_vector, picture: view_dot()),
-  //       ),
-  //       list.map(
-  //         get_dots(around: model.avatar.pos, height: 3.0 *. height_factor),
-  //         view_object(_, camera: camera_vector, picture: view_dot()),
-  //       ),
-  //       // [view_object(model.avatar, camera: camera_vector, picture: view_avatar())],
-  //     ]),
-  //   )
-  //   // Center.
-  //   |> p.translate_xy(center.x, center.y)
-
-  let camera = Vector(pos: Vec2(0.0, 0.0), dir: model.avatar.dir)
+  let camera = model.avatar
   let picture = view_dot()
-  let o = view_object(_, camera:, picture:)
 
   let content =
     p.combine(
@@ -221,27 +200,26 @@ fn view_object(
   picture picture: p.Picture,
 ) -> p.Picture {
   let half_visible_angle = maths.degrees_to_radians(45.0)
-  let angle_to_object =
-    object.pos
-    |> vec2f.subtract(camera.pos)
-    |> fn(v) { normalize_angle(maths.atan2(v.y, v.x)) }
-  let angle = normalize_angle(angle_to_object -. normalize_angle(camera.dir))
+  let angle_x_to_object =
+    angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
+  let angle_x = normalize_angle(angle_x_to_object -. camera.dir)
 
-  case float.absolute_value(angle) >. half_visible_angle {
+  case float.absolute_value(angle_x) >. half_visible_angle {
     True ->
       // Object is not within camera's visible area.
       p.blank()
 
     False -> {
       // Distance between camera and object (hypotenuse).
-      let distance =
+      let distance_x =
         float.absolute_value(vec2f.distance(camera.pos, object.pos))
+      let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
 
-      let scale = get_scale(distance)
+      let scale = get_scale(distance_x)
       let translation =
         Vec2(
-          angle *. center.x /. half_visible_angle,
-          object.height *. 10.0 *. scale,
+          angle_x *. center.x /. half_visible_angle,
+          angle_y *. center.x /. half_visible_angle,
         )
 
       picture
@@ -249,6 +227,15 @@ fn view_object(
       |> p.translate_xy(translation.x, translation.y)
     }
   }
+}
+
+fn angle_between(
+  from_x from_x: Float,
+  from_y from_y: Float,
+  to_x to_x: Float,
+  to_y to_y: Float,
+) -> Float {
+  maths.atan2(to_y -. from_y, to_x -. from_x)
 }
 
 /// Normalizes an angle in radians between pi (inclusive) and -pi (exclusive).
