@@ -243,7 +243,7 @@ fn get_camera_dir(
 }
 
 fn get_dots_around(pos: Vec2(Float)) {
-  let range = list.range(-10, 10)
+  let range = list.range(-40, 40)
   let x_base = float.floor(pos.x /. distance_between_dots)
   let y_base = float.floor(pos.y /. distance_between_dots)
 
