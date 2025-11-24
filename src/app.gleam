@@ -57,6 +57,10 @@ type Vector {
   Vector(pos: Vec2(Float), dir: Float)
 }
 
+type Object {
+  Object(pos: Vec2(Float), height: Float)
+}
+
 type Camera {
   Camera(lagging_dir: Float, start_move_time: Float)
 }
@@ -147,40 +151,22 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 
 fn view(model: Model) -> p.Picture {
   let distance_factor = 5.0
-  let dots = get_dots_around(model.avatar.pos)
+  let height_factor = 1.0
+  let camera_vector = Vector(pos: model.avatar.pos, dir: model.avatar.dir)
 
   let content =
     p.combine(
       list.flatten([
-        list.map(dots, view_dot(
-          pos: _,
-          distance: 3.0 *. distance_factor,
-          camera_pos: model.avatar.pos,
-        )),
+        list.map(
+          get_dots(around: model.avatar.pos, height: 1.0 *. height_factor),
+          view_dot(_, camera: camera_vector),
+        ),
         [view_avatar(model.avatar, 2.0 *. distance_factor)],
-        list.map(dots, view_dot(
-          pos: _,
-          distance: 1.0 *. distance_factor,
-          camera_pos: model.avatar.pos,
-        )),
+        list.map(
+          get_dots(around: model.avatar.pos, height: 3.0 *. height_factor),
+          view_dot(_, camera: camera_vector),
+        ),
       ]),
-    )
-    // Put origin on avatar.
-    |> p.translate_xy(
-      float.negate(model.avatar.pos.x),
-      float.negate(model.avatar.pos.y),
-    )
-    // Rotate to follow avatar direction.
-    |> p.rotate(
-      p.angle_rad(float.negate(
-        get_camera_dir(
-          model.camera,
-          avatar_dir: model.avatar.dir,
-          current_time: model.current_time,
-        )
-        // Correction to make it point upward.
-        +. { maths.tau() *. 0.25 },
-      )),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
@@ -201,22 +187,48 @@ fn view_avatar(avatar: Vector, distance distance: Float) -> p.Picture {
   |> p.translate_xy(avatar.pos.x, avatar.pos.y)
 }
 
-fn view_dot(
-  pos pos: Vec2(Float),
-  distance distance: Float,
-  camera_pos camera_pos: Vec2(Float),
-) {
-  let scale = get_scale(distance)
-  let translation =
-    pos
-    |> vec2f.subtract(camera_pos)
-    |> vec2f.scale(scale)
-    |> vec2f.add(camera_pos)
+fn view_dot(dot: Object, camera camera: Vector) -> p.Picture {
+  let camera_dir = normalize_angle(camera.dir)
+  let angle_to_dot = normalize_angle(vec2f.angle(camera.pos, dot.pos))
+  let angle = normalize_angle(angle_to_dot -. camera_dir)
+  let angle_difference = maths.absolute_difference(camera_dir, angle_to_dot)
 
-  p.circle(2.0 *. scale)
-  |> p.fill(colour.black)
-  |> p.stroke_none
-  |> p.translate_xy(translation.x, translation.y)
+  case angle_difference >. { 0.2 *. maths.tau() } {
+    True ->
+      // Object is not within camera's visible area.
+      p.blank()
+
+    False -> {
+      // Distance between camera and dot (hypotenuse).
+      let distance = vec2f.distance(camera.pos, dot.pos)
+      // Adjacent side length.
+      let plane_distance = maths.cos(angle_difference) *. distance
+      // Opposite side length. Distance from camera focus center.
+      let lateral_distance = maths.sin(angle) *. distance
+
+      let scale = get_scale(plane_distance)
+      let translation =
+        Vec2(lateral_distance, dot.height *. 1.0)
+        |> vec2f.scale(scale)
+
+      p.circle(2.0 *. scale)
+      |> p.fill(colour.black)
+      |> p.stroke_none
+      |> p.translate_xy(translation.x, translation.y)
+    }
+  }
+}
+
+/// Normalizes an angle in radians between pi (inclusive) and -pi (exclusive).
+/// This makes it easier to compare and interpolate between angles.
+fn normalize_angle(radians: Float) -> Float {
+  let pi = maths.pi()
+  let minus_pi = float.negate(pi)
+  case radians {
+    r if r >. pi -> normalize_angle(r -. pi)
+    r if r <=. minus_pi -> normalize_angle(r +. pi)
+    r -> r
+  }
 }
 
 // UTILS
@@ -242,10 +254,10 @@ fn get_camera_dir(
   }
 }
 
-fn get_dots_around(pos: Vec2(Float)) {
+fn get_dots(around center: Vec2(Float), height height: Float) -> List(Object) {
   let range = list.range(-40, 40)
-  let x_base = float.floor(pos.x /. distance_between_dots)
-  let y_base = float.floor(pos.y /. distance_between_dots)
+  let x_base = float.floor(center.x /. distance_between_dots)
+  let y_base = float.floor(center.y /. distance_between_dots)
 
   range
   |> list.flat_map(fn(x_offset) {
@@ -255,11 +267,14 @@ fn get_dots_around(pos: Vec2(Float)) {
     |> list.map(fn(y_offset) {
       let y_offset_float = int.to_float(y_offset)
 
-      Vec2(
-        { x_offset_float *. distance_between_dots }
-          +. { x_base *. distance_between_dots },
-        { y_offset_float *. distance_between_dots }
-          +. { y_base *. distance_between_dots },
+      Object(
+        height:,
+        pos: Vec2(
+          { x_offset_float *. distance_between_dots }
+            +. { x_base *. distance_between_dots },
+          { y_offset_float *. distance_between_dots }
+            +. { y_base *. distance_between_dots },
+        ),
       )
     })
   })
