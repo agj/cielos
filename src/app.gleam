@@ -239,7 +239,10 @@ fn view_object(
 
       let scale = get_scale(distance)
       let translation =
-        Vec2(angle /. maths.tau() *. 500.0, object.height *. 10.0 *. scale)
+        Vec2(
+          angle *. center.x /. half_visible_angle,
+          object.height *. 10.0 *. scale,
+        )
 
       picture
       |> p.scale_uniform(scale)
