@@ -1,3 +1,5 @@
+port := "8080"
+
 [private]
 @default:
     just --list --unsorted
@@ -7,7 +9,15 @@ build:
     gleam build
 
 # Start development server.
-develop: build
+develop: build qr
     #!/usr/bin/env nu
-    http-server . --silent -c-1 | lines | each { print $in }
+    http-server . --port {{port}} --silent -c-1 | lines | each { print $in }
     | interleave { watch ./src --glob='**/*.gleam' { try { just build } } }
+
+[private]
+qr:
+    #!/usr/bin/env nu
+    let ip = sys net | where name == "en0" | get ip.0 | where protocol == "ipv4" | get address.0
+    let url = $"http://($ip):{{port}}"
+    qrrs $url
+    print $url

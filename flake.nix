@@ -18,9 +18,10 @@
             pkgs.beam28Packages.erlang
             pkgs.beam28Packages.rebar3
             pkgs.gleam
+            pkgs.http-server
             pkgs.just
             pkgs.nushell
-            pkgs.http-server
+            pkgs.qrrs
           ];
         };
       }
