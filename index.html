@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gleam Game Jam entry</title>
   </head>
+
   <body>
     <style>
       html,
@@ -32,10 +33,21 @@
         image-rendering: pixelated;
       }
     </style>
+
     <canvas id="app" width="300" height="300"></canvas>
+
     <script type="module">
       import { main } from "./build/dev/javascript/app/app.mjs";
       main();
+
+      // Prevent drag scrolling.
+      document.addEventListener(
+        "touchmove",
+        (e) => {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
     </script>
   </body>
 </html>
