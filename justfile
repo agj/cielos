@@ -7,7 +7,7 @@ port := "8080"
 # Build release files on `dist` directory.
 build: build-gleam
     pnpm install
-    pnpm exec vite build
+    pnpm exec vite build --base './'
 
 # Start development server.
 develop: build-gleam qr
