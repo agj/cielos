@@ -1,5 +1,6 @@
 import gleam/float
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -35,6 +36,7 @@ fn init(_config: canvas.Config) -> Model {
     speed: 0.01,
     dots:,
     mouse_pos: Vec2(0.0, 0.0),
+    dragging: False,
     current_time: 0.0,
   )
 }
@@ -62,6 +64,7 @@ type Model {
     speed: Float,
     dots: List(Object),
     mouse_pos: Vec2(Float),
+    dragging: Bool,
     current_time: Float,
   )
 }
@@ -104,15 +107,10 @@ fn update(model: Model, event: event.Event) -> Model {
 
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
-    event.MousePressed(event.MouseButtonLeft) ->
-      // Place avatar on click position.
-      Model(
-        ..model,
-        avatar: Vector(
-          ..model.avatar,
-          pos: vec2f.subtract(model.mouse_pos, center),
-        ),
-      )
+    event.MousePressed(event.MouseButtonLeft) -> Model(..model, dragging: True)
+
+    event.MouseReleased(event.MouseButtonLeft) ->
+      Model(..model, dragging: False)
 
     // Ignore other events.
     _ -> model
@@ -178,7 +176,15 @@ fn view(model: Model) -> p.Picture {
     // Center.
     |> p.translate_xy(center.x, center.y)
 
-  p.combine([view_background(), content])
+  let indicator = case model.dragging {
+    True ->
+      p.square(30.0)
+      |> p.fill(colour.light_green)
+      |> p.stroke_none
+    False -> p.blank()
+  }
+
+  p.combine([view_background(), content, indicator])
 }
 
 fn view_background() -> p.Picture {

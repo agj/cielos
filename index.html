@@ -41,6 +41,7 @@
       main();
 
       // Prevent drag scrolling.
+
       document.addEventListener(
         "touchmove",
         (e) => {
@@ -48,6 +49,15 @@
         },
         { passive: false },
       );
+
+      // Simulate mouse events for touch.
+
+      const dispatchMouseEvent = (eventName) => (_) => {
+        window.dispatchEvent(new MouseEvent(eventName, { buttons: 1 }));
+      };
+
+      window.addEventListener("touchstart", dispatchMouseEvent("mousedown"));
+      window.addEventListener("touchend", dispatchMouseEvent("mouseup"));
     </script>
   </body>
 </html>
