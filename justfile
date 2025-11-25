@@ -4,16 +4,16 @@ port := "8080"
 @default:
     just --list --unsorted
 
-# Build release files on `dist` directory.
-build: build-gleam
-    pnpm install
-    pnpm exec vite build --base './'
-
 # Start development server.
 develop: build-gleam qr
     #!/usr/bin/env nu
     http-server . --port {{port}} --silent -c-1 | lines | each { print $in }
     | interleave { watch ./src --glob='**/*.gleam' { try { just build-gleam } } }
+
+# Build release files on `dist` directory.
+build: build-gleam
+    pnpm install
+    pnpm exec vite build --base './'
 
 # Build and deploy on Github Pages.
 deploy: build
