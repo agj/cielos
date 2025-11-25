@@ -1,3 +1,5 @@
+/dist/
+
 # Gleam.
 *.beam
 *.ez
@@ -7,3 +9,4 @@ erl_crash.dump
 # Tools.
 .direnv/
 .helix/
+node_modules/

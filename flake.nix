@@ -20,7 +20,9 @@
             pkgs.gleam
             pkgs.http-server
             pkgs.just
+            pkgs.nodejs-slim_24
             pkgs.nushell
+            pkgs.pnpm
             pkgs.qrrs
           ];
         };

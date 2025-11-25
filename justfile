@@ -4,15 +4,20 @@ port := "8080"
 @default:
     just --list --unsorted
 
-# Build JS files.
-build:
-    gleam build
+# Build release files on `dist` directory.
+build: build-gleam
+    pnpm install
+    pnpm exec vite build
 
 # Start development server.
-develop: build qr
+develop: build-gleam qr
     #!/usr/bin/env nu
     http-server . --port {{port}} --silent -c-1 | lines | each { print $in }
-    | interleave { watch ./src --glob='**/*.gleam' { try { just build } } }
+    | interleave { watch ./src --glob='**/*.gleam' { try { just build-gleam } } }
+
+[private]
+build-gleam:
+    gleam build
 
 [private]
 qr:
