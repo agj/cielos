@@ -152,9 +152,12 @@ fn change_rotation_by_dragging(model: Model, delta_time: Float) -> Model {
   case model.drag {
     NoDrag -> model
     Dragging(start_pos:) -> {
-      let drag_factor = { model.mouse_pos.x -. start_pos.x } *. 0.01
+      let drag_factor =
+        { model.mouse_pos.x -. start_pos.x } *. 0.001
+        |> float.clamp(min: -0.02, max: 0.02)
+      let rotate_amount = drag_factor *. delta_time
 
-      change_rotation_by_keyboard(model, drag_factor)
+      change_rotation_by_keyboard(model, rotate_amount)
     }
   }
 }
