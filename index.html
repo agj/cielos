@@ -52,8 +52,6 @@
 
       // Simulate mouse events for touch.
 
-      let lastPositions = {};
-
       const dispatchMouseEvent = (eventName, buttons) => (e) => {
         const touch = e.touches?.item(0);
         const positions = touch
@@ -63,14 +61,16 @@
               clientX: touch.clientX,
               clientY: touch.clientY,
             }
-          : lastPositions;
-        lastPositions = positions;
+          : {};
+
+        if (eventName === "mousedown") {
+          // If we don't send a `mousemove` event before the `mousedown`, the
+          // pointer coordinates won't be updated correctly by "paint".
+          window.dispatchEvent(new MouseEvent("mousemove", { ...positions }));
+        }
 
         window.dispatchEvent(
-          new MouseEvent(eventName, {
-            buttons,
-            ...positions,
-          }),
+          new MouseEvent(eventName, { buttons, ...positions }),
         );
       };
 
