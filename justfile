@@ -15,6 +15,10 @@ develop: build-gleam qr
     http-server . --port {{port}} --silent -c-1 | lines | each { print $in }
     | interleave { watch ./src --glob='**/*.gleam' { try { just build-gleam } } }
 
+# Build and deploy on Github Pages.
+deploy: build
+    pnpm exec gh-pages --dist ./dist
+
 [private]
 build-gleam:
     gleam build
