@@ -1,6 +1,5 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam_community/colour
 import gleam_community/maths
@@ -17,7 +16,7 @@ pub fn main() {
 fn init(_config: canvas.Config) -> Model {
   let dir = 0.8 *. maths.tau()
 
-  let dots =
+  let stars =
     list.range(0, 200)
     |> list.map(fn(i) {
       let i_f = int.to_float(i)
@@ -34,7 +33,7 @@ fn init(_config: canvas.Config) -> Model {
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     speed: 0.01,
-    dots:,
+    stars:,
     mouse_pos: Vec2(0.0, 0.0),
     drag: NoDrag,
     current_time: 0.0,
@@ -62,7 +61,7 @@ type Model {
     avatar: Vector,
     camera: Camera,
     speed: Float,
-    dots: List(Object),
+    stars: List(Object),
     mouse_pos: Vec2(Float),
     drag: Drag,
     current_time: Float,
@@ -183,11 +182,11 @@ fn view(model: Model) -> p.Picture {
       ..model.avatar,
       dir: get_camera_dir(model.camera, model.avatar.dir, model.current_time),
     )
-  let picture = view_dot()
+  let picture = view_star()
 
   let content =
     p.combine(
-      model.dots
+      model.stars
       |> list.map(view_object(_, camera:, picture:)),
     )
     // Center.
@@ -204,11 +203,11 @@ fn view_background() -> p.Picture {
   |> p.stroke_none
 }
 
-fn view_dot() -> p.Picture {
-  let assert Ok(dot_color) = colour.from_hsl(0.12, 1.0, 0.7)
+fn view_star() -> p.Picture {
+  let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
 
   p.circle(300.0)
-  |> p.fill(dot_color)
+  |> p.fill(star_color)
   |> p.stroke_none
 }
 
