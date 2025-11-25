@@ -36,7 +36,7 @@ fn init(_config: canvas.Config) -> Model {
     speed: 0.01,
     dots:,
     mouse_pos: Vec2(0.0, 0.0),
-    dragging: False,
+    drag: NoDrag,
     current_time: 0.0,
   )
 }
@@ -64,7 +64,7 @@ type Model {
     speed: Float,
     dots: List(Object),
     mouse_pos: Vec2(Float),
-    dragging: Bool,
+    drag: Drag,
     current_time: Float,
   )
 }
@@ -81,25 +81,31 @@ type Camera {
   Camera(lagging_dir: Float, start_move_time: Float)
 }
 
+type Drag {
+  NoDrag
+  Dragging(start_pos: Vec2(Float))
+}
+
 // UPDATE
 
 fn update(model: Model, event: event.Event) -> Model {
   case event {
     event.Tick(updated_time) -> {
+      let delta_time = updated_time -. model.current_time
+
       Model(
         ..model,
         current_time: updated_time,
-        avatar: move_avatar(
-          model.avatar,
-          speed: model.speed,
-          delta_time: updated_time -. model.current_time,
-        ),
+        avatar: move_avatar(model.avatar, speed: model.speed, delta_time:),
       )
+      |> change_rotation_by_dragging(delta_time)
     }
 
-    event.KeyboardPressed(event.KeyLeftArrow) -> change_rotation(model, -1.0)
+    event.KeyboardPressed(event.KeyLeftArrow) ->
+      change_rotation_by_keyboard(model, -1.0)
 
-    event.KeyboardPressed(event.KeyRightArrow) -> change_rotation(model, 1.0)
+    event.KeyboardPressed(event.KeyRightArrow) ->
+      change_rotation_by_keyboard(model, 1.0)
 
     event.KeyboardPressed(event.KeyUpArrow) -> change_speed(model, 1.0)
 
@@ -107,10 +113,10 @@ fn update(model: Model, event: event.Event) -> Model {
 
     event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
 
-    event.MousePressed(event.MouseButtonLeft) -> Model(..model, dragging: True)
+    event.MousePressed(event.MouseButtonLeft) ->
+      Model(..model, drag: Dragging(start_pos: model.mouse_pos))
 
-    event.MouseReleased(event.MouseButtonLeft) ->
-      Model(..model, dragging: False)
+    event.MouseReleased(event.MouseButtonLeft) -> Model(..model, drag: NoDrag)
 
     // Ignore other events.
     _ -> model
@@ -128,10 +134,10 @@ fn move_avatar(
   Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
 }
 
-fn change_rotation(model: Model, direction: Float) -> Model {
+fn change_rotation_by_keyboard(model: Model, amount: Float) -> Model {
   Model(
     ..model,
-    avatar: rotate_avatar(model.avatar, direction),
+    avatar: rotate_avatar(model.avatar, amount),
     camera: Camera(
       start_move_time: model.current_time,
       lagging_dir: get_camera_dir(
@@ -141,6 +147,17 @@ fn change_rotation(model: Model, direction: Float) -> Model {
       ),
     ),
   )
+}
+
+fn change_rotation_by_dragging(model: Model, delta_time: Float) -> Model {
+  case model.drag {
+    NoDrag -> model
+    Dragging(start_pos:) -> {
+      let drag_factor = { model.mouse_pos.x -. start_pos.x } *. 0.01
+
+      change_rotation_by_keyboard(model, drag_factor)
+    }
+  }
 }
 
 fn change_speed(model: Model, direction: Float) -> Model {
@@ -176,12 +193,12 @@ fn view(model: Model) -> p.Picture {
     // Center.
     |> p.translate_xy(center.x, center.y)
 
-  let indicator = case model.dragging {
-    True ->
+  let indicator = case model.drag {
+    NoDrag -> p.blank()
+    Dragging(_) ->
       p.square(30.0)
       |> p.fill(colour.light_green)
       |> p.stroke_none
-    False -> p.blank()
   }
 
   p.combine([view_background(), content, indicator])
@@ -245,7 +262,7 @@ fn get_camera_dir(
   avatar_dir avatar_dir: Float,
   current_time current_time: Float,
 ) -> Float {
-  let total_time = 200.0
+  let total_time = 100.0
   let start_time = camera.start_move_time
   let end_time = start_time +. total_time
 
