@@ -52,12 +52,12 @@
 
       // Simulate mouse events for touch.
 
-      const dispatchMouseEvent = (eventName) => (_) => {
-        window.dispatchEvent(new MouseEvent(eventName, { buttons: 1 }));
+      const dispatchMouseEvent = (eventName, buttons) => (_) => {
+        window.dispatchEvent(new MouseEvent(eventName, { buttons }));
       };
 
-      window.addEventListener("touchstart", dispatchMouseEvent("mousedown"));
-      window.addEventListener("touchend", dispatchMouseEvent("mouseup"));
+      window.addEventListener("touchstart", dispatchMouseEvent("mousedown", 1));
+      window.addEventListener("touchend", dispatchMouseEvent("mouseup", 0));
     </script>
   </body>
 </html>
