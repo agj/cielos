@@ -193,15 +193,7 @@ fn view(model: Model) -> p.Picture {
     // Center.
     |> p.translate_xy(center.x, center.y)
 
-  let indicator = case model.drag {
-    NoDrag -> p.blank()
-    Dragging(_) ->
-      p.square(30.0)
-      |> p.fill(colour.light_green)
-      |> p.stroke_none
-  }
-
-  p.combine([view_background(), content, indicator])
+  p.combine([view_background(), content])
 }
 
 fn view_background() -> p.Picture {
