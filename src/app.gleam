@@ -278,7 +278,7 @@ fn view_gradient(
   |> list.map(fn(i) {
     let i_f = int.to_float(i)
     let factor = {
-      i_f /. steps_f
+      i_f /. { steps_f -. 1.0 }
     }
     let assert Ok(bg_color) =
       colour.from_hsl(
