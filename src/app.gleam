@@ -322,6 +322,7 @@ fn view_shadow() -> p.Picture {
   let assert Ok(shadow_color) = colour.from_hsla(0.75, 0.5, 0.4, 0.05)
 
   p.rectangle(200.0, 5000.0)
+  |> p.translate_x(-100.0)
   |> p.fill(shadow_color)
   |> p.stroke_none
 }
