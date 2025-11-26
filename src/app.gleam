@@ -433,15 +433,14 @@ fn view_gradient(
 
 /// Pause icon, with dimensions 12×12 and origin on top left.
 fn view_icon_pause(color: colour.Colour) -> p.Picture {
-  let bar =
-    p.rectangle(4.0, 12.0)
-    |> p.fill(color)
-    |> p.stroke_none
+  let bar = p.rectangle(4.0, 12.0)
 
   p.combine([
     bar,
     bar |> p.translate_xy(8.0, 0.0),
   ])
+  |> p.fill(color)
+  |> p.stroke_none
 }
 
 /// Play icon, with dimensions 12×12 and origin on top left.
