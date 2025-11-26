@@ -41,6 +41,7 @@ fn init(_config: canvas.Config) -> Model {
     mouse_pos: Vec2(0.0, 0.0),
     drag: NoDrag,
     current_time: 0.0,
+    paused: NotPaused,
   )
 }
 
@@ -69,6 +70,7 @@ type Model {
     mouse_pos: Vec2(Float),
     drag: Drag,
     current_time: Float,
+    paused: PauseStatus,
   )
 }
 
@@ -94,11 +96,19 @@ type Drag {
   Dragging(start_pos: Vec2(Float))
 }
 
+type PauseStatus {
+  Paused
+  NotPaused
+}
+
 // UPDATE
 
 fn update(model: Model, event: event.Event) -> Model {
-  case event {
-    event.Tick(updated_time) -> {
+  case event, model.paused {
+    event.Tick(updated_time), Paused ->
+      Model(..model, current_time: updated_time)
+
+    event.Tick(updated_time), NotPaused -> {
       let delta_time = updated_time -. model.current_time
 
       Model(
@@ -109,25 +119,40 @@ fn update(model: Model, event: event.Event) -> Model {
       |> change_rotation_by_dragging(delta_time)
     }
 
-    event.KeyboardPressed(event.KeyLeftArrow) ->
+    // Keyboard.
+    event.KeyboardPressed(event.KeyLeftArrow), NotPaused ->
       change_rotation_by_keyboard(model, -1.0)
 
-    event.KeyboardPressed(event.KeyRightArrow) ->
+    event.KeyboardPressed(event.KeyRightArrow), NotPaused ->
       change_rotation_by_keyboard(model, 1.0)
 
-    event.KeyboardPressed(event.KeyUpArrow) -> change_speed(model, 1.0)
+    event.KeyboardPressed(event.KeyUpArrow), NotPaused ->
+      change_speed(model, 1.0)
 
-    event.KeyboardPressed(event.KeyDownArrow) -> change_speed(model, -1.0)
+    event.KeyboardPressed(event.KeyDownArrow), NotPaused ->
+      change_speed(model, -1.0)
 
-    event.MouseMoved(x, y) -> Model(..model, mouse_pos: Vec2(x, y))
+    event.KeyboardPressed(event.KeyEscape), _ ->
+      Model(
+        ..model,
+        paused: case model.paused {
+          Paused -> NotPaused
+          NotPaused -> Paused
+        },
+        drag: NoDrag,
+      )
 
-    event.MousePressed(event.MouseButtonLeft) ->
+    // Mouse.
+    event.MouseMoved(x, y), _ -> Model(..model, mouse_pos: Vec2(x, y))
+
+    event.MousePressed(event.MouseButtonLeft), NotPaused ->
       Model(..model, drag: Dragging(start_pos: model.mouse_pos))
 
-    event.MouseReleased(event.MouseButtonLeft) -> Model(..model, drag: NoDrag)
+    event.MouseReleased(event.MouseButtonLeft), NotPaused ->
+      Model(..model, drag: NoDrag)
 
     // Ignore other events.
-    _ -> model
+    _, _ -> model
   }
 }
 
