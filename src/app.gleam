@@ -1,5 +1,6 @@
 import gleam/float
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/order
 import gleam_community/colour
@@ -137,26 +138,40 @@ fn update(model: Model, event: event.Event) -> Model {
       change_speed(model, -1.0)
 
     event.KeyboardPressed(event.KeyEscape), _ ->
-      Model(
-        ..model,
-        paused: case model.paused {
-          Paused -> NotPaused
-          NotPaused -> Paused
-        },
-        drag: NoDrag,
-      )
+      change_paused(model, flip_paused(model.paused))
 
     // Mouse.
     event.MouseMoved(x, y), _ -> Model(..model, mouse_pos: Vec2(x, y))
 
-    event.MousePressed(event.MouseButtonLeft), NotPaused ->
-      Model(..model, drag: Dragging(start_pos: model.mouse_pos))
+    event.MousePressed(event.MouseButtonLeft), NotPaused -> {
+      let on_pause_button =
+        model.mouse_pos.x <=. 30.0 && model.mouse_pos.y >=. { height -. 30.0 }
+
+      case on_pause_button {
+        True -> change_paused(model, Paused)
+        False -> Model(..model, drag: Dragging(start_pos: model.mouse_pos))
+      }
+    }
+
+    event.MousePressed(event.MouseButtonLeft), Paused ->
+      change_paused(model, NotPaused)
 
     event.MouseReleased(event.MouseButtonLeft), NotPaused ->
       Model(..model, drag: NoDrag)
 
     // Ignore other events.
     _, _ -> model
+  }
+}
+
+fn change_paused(model: Model, new_paused: PauseStatus) -> Model {
+  Model(..model, paused: new_paused, drag: NoDrag)
+}
+
+fn flip_paused(paused: PauseStatus) -> PauseStatus {
+  case paused {
+    Paused -> NotPaused
+    NotPaused -> Paused
   }
 }
 
