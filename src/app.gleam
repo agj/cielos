@@ -207,11 +207,76 @@ fn view(model: Model) -> p.Picture {
 }
 
 fn view_background() -> p.Picture {
-  let assert Ok(bg_color) = colour.from_hsl(0.85, 0.5, 0.96)
+  let #(sky_from_h, sky_from_s, sky_from_l) = #(0.85, 0.6, 0.9)
+  let #(sky_to_h, sky_to_s, sky_to_l) = #(0.7, 0.4, 0.98)
+  let #(clouds_from_h, clouds_from_s, clouds_from_l) = #(0.6, 0.6, 0.9)
+  let #(clouds_to_h, clouds_to_s, clouds_to_l) = #(0.7, 0.4, 0.98)
 
-  p.rectangle(width, height)
-  |> p.fill(bg_color)
-  |> p.stroke_none
+  [
+    view_gradient(
+      from_h: 0.85,
+      to_h: 0.7,
+      from_s: 0.6,
+      to_s: 0.4,
+      from_l: 0.9,
+      to_l: 0.98,
+      width:,
+      height: height /. 2.0,
+      steps: 50,
+    ),
+    view_gradient(
+      from_h: 0.6,
+      to_h: 0.6,
+      from_s: 0.4,
+      to_s: 0.7,
+      from_l: 0.95,
+      to_l: 0.8,
+      width:,
+      height: height /. 2.0,
+      steps: 50,
+    )
+      |> p.translate_y(center.y),
+  ]
+  |> p.combine
+}
+
+fn view_gradient(
+  from_h from_h: Float,
+  from_s from_s: Float,
+  from_l from_l: Float,
+  to_h to_h: Float,
+  to_s to_s: Float,
+  to_l to_l: Float,
+  width width: Float,
+  height height: Float,
+  steps steps: Int,
+) -> p.Picture {
+  let steps_f = int.to_float(steps)
+  let stripe_height = float.floor(height /. steps_f)
+
+  list.range(0, steps)
+  |> list.map(fn(i) {
+    let i_f = int.to_float(i)
+    let factor = {
+      i_f /. steps_f
+    }
+    let assert Ok(bg_color) =
+      colour.from_hsl(
+        interpolate(from: from_h, to: to_h, by: factor),
+        interpolate(from: from_s, to: to_s, by: factor),
+        interpolate(from: from_l, to: to_l, by: factor),
+      )
+
+    p.rectangle(width, stripe_height)
+    |> p.translate_y(stripe_height *. i_f)
+    |> p.fill(bg_color)
+    |> p.stroke_none
+  })
+  |> p.combine
+}
+
+fn interpolate(from from: Float, to to: Float, by factor: Float) {
+  { { to -. from } *. factor } +. from
 }
 
 fn view_star() -> p.Picture {
