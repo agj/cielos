@@ -1,6 +1,7 @@
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/order
 import gleam_community/colour
 import gleam_community/maths
 import paint as p
@@ -247,6 +248,7 @@ fn view(model: Model) -> p.Picture {
           False -> Error(Nil)
         }
       })
+      |> list.sort(fn(a, b) { order.negate(float.compare(a.2, b.2)) })
       |> list.map(fn(args) {
         view_object(
           args.0,
