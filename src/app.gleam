@@ -43,6 +43,7 @@ fn init(_config: canvas.Config) -> Model {
     drag: NoDrag,
     current_time: 0.0,
     paused: NotPaused,
+    consts: Consts(background_picture: view_background()),
   )
 }
 
@@ -75,6 +76,7 @@ type Model {
     drag: Drag,
     current_time: Float,
     paused: PauseStatus,
+    consts: Consts,
   )
 }
 
@@ -103,6 +105,10 @@ type Drag {
 type PauseStatus {
   Paused
   NotPaused
+}
+
+type Consts {
+  Consts(background_picture: p.Picture)
 }
 
 // UPDATE
@@ -275,7 +281,7 @@ fn view(model: Model) -> p.Picture {
     // Center.
     |> p.translate_xy(center.x, center.y)
 
-  p.combine([view_background(), content, view_ui(model)])
+  p.combine([model.consts.background_picture, content, view_ui(model)])
 }
 
 fn view_ui(model: Model) -> p.Picture {
