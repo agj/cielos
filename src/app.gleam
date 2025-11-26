@@ -276,15 +276,15 @@ fn view(model: Model) -> p.Picture {
     // Center.
     |> p.translate_xy(center.x, center.y)
 
-  p.combine([view_background(), content, view_ui()])
+  p.combine([view_background(), content, view_ui(model)])
 }
 
-fn view_ui() {
-  view_pause_button()
+fn view_ui(model: Model) -> p.Picture {
+  view_pause_button(model.paused)
   |> p.translate_xy(17.0, height -. 17.0)
 }
 
-fn view_pause_button() {
+fn view_pause_button(paused: PauseStatus) -> p.Picture {
   let assert Ok(bg_color) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
   let assert Ok(icon_color) = colour.from_hsl(0.6, 0.7, 0.7)
 
@@ -292,21 +292,14 @@ fn view_pause_button() {
     p.circle(15.0)
       |> p.fill(bg_color)
       |> p.stroke_none,
-    view_icon_pause(icon_color)
-      |> p.translate_xy(-6.0, -6.0),
-  ])
-}
-
-/// Pause icon, with dimensions 12×12 and origin on top left.
-fn view_icon_pause(color: colour.Colour) -> p.Picture {
-  let bar =
-    p.rectangle(4.0, 12.0)
-    |> p.fill(color)
-    |> p.stroke_none
-
-  p.combine([
-    bar,
-    bar |> p.translate_xy(8.0, 0.0),
+    case paused {
+      Paused ->
+        view_icon_play(icon_color)
+        |> p.translate_xy(-6.0, -6.0)
+      NotPaused ->
+        view_icon_pause(icon_color)
+        |> p.translate_xy(-6.0, -6.0)
+    },
   ])
 }
 
@@ -434,6 +427,32 @@ fn view_gradient(
     |> p.stroke_none
   })
   |> p.combine
+}
+
+// ICONS
+
+/// Pause icon, with dimensions 12×12 and origin on top left.
+fn view_icon_pause(color: colour.Colour) -> p.Picture {
+  let bar =
+    p.rectangle(4.0, 12.0)
+    |> p.fill(color)
+    |> p.stroke_none
+
+  p.combine([
+    bar,
+    bar |> p.translate_xy(8.0, 0.0),
+  ])
+}
+
+/// Play icon, with dimensions 12×12 and origin on top left.
+fn view_icon_play(color: colour.Colour) -> p.Picture {
+  p.polygon([
+    #(2.0, 0.0),
+    #(11.0, 6.0),
+    #(2.0, 12.0),
+  ])
+  |> p.fill(color)
+  |> p.stroke_none
 }
 
 // UTILS
