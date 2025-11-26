@@ -59,6 +59,9 @@ const max_speed = 0.4
 
 const rotation_speed = 0.09
 
+// tau / 8
+const half_visible_angle = 0.7853981634
+
 // MODEL
 
 type Model {
@@ -223,7 +226,35 @@ fn view(model: Model) -> p.Picture {
   let content =
     p.combine(
       model.objects
-      |> list.map(view_object(_, camera:, current_time: model.current_time)),
+      |> list.filter_map(fn(object) {
+        let horizontal_angle_from_camera_pos =
+          angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
+        let horizontal_angle_from_camera_center =
+          normalize_angle(horizontal_angle_from_camera_pos -. camera.dir)
+        let horizontal_distance_from_camera =
+          float.absolute_value(vec2f.distance(camera.pos, object.pos))
+        let in_field_of_view =
+          float.absolute_value(horizontal_angle_from_camera_center)
+          <=. half_visible_angle
+
+        case in_field_of_view {
+          True ->
+            Ok(#(
+              object,
+              horizontal_angle_from_camera_center,
+              horizontal_distance_from_camera,
+            ))
+          False -> Error(Nil)
+        }
+      })
+      |> list.map(fn(args) {
+        view_object(
+          args.0,
+          horizontal_angle_from_camera_center: args.1,
+          horizontal_distance_from_camera: args.2,
+          current_time: model.current_time,
+        )
+      }),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
@@ -235,37 +266,22 @@ fn view(model: Model) -> p.Picture {
 
 fn view_object(
   object: Object,
-  camera camera: Vector,
+  horizontal_angle_from_camera_center angle_x: Float,
+  horizontal_distance_from_camera distance_x: Float,
   current_time current_time: Float,
 ) -> p.Picture {
-  let half_visible_angle = maths.degrees_to_radians(45.0)
-  let angle_x_to_object =
-    angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
-  let angle_x = normalize_angle(angle_x_to_object -. camera.dir)
+  let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
 
-  case float.absolute_value(angle_x) >. half_visible_angle {
-    True ->
-      // Object is not within camera's visible area.
-      p.blank()
+  let scale = get_scale(distance_x)
+  let translation =
+    Vec2(
+      angle_x *. center.x /. half_visible_angle,
+      float.negate(angle_y *. center.x /. half_visible_angle),
+    )
 
-    False -> {
-      // Distance between camera and object.
-      let distance_x =
-        float.absolute_value(vec2f.distance(camera.pos, object.pos))
-      let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
-
-      let scale = get_scale(distance_x)
-      let translation =
-        Vec2(
-          angle_x *. center.x /. half_visible_angle,
-          float.negate(angle_y *. center.x /. half_visible_angle),
-        )
-
-      get_picture_for_object(object.kind, current_time)
-      |> p.scale_uniform(scale)
-      |> p.translate_xy(translation.x, translation.y)
-    }
-  }
+  get_picture_for_object(object.kind, current_time)
+  |> p.scale_uniform(scale)
+  |> p.translate_xy(translation.x, translation.y)
 }
 
 fn get_picture_for_object(
