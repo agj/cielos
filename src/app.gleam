@@ -121,20 +121,17 @@ fn update(model: Model, event: event.Event) -> Model {
     event.Tick(updated_time), NotPaused -> {
       let delta_time = updated_time -. model.current_time
 
-      Model(
-        ..model,
-        current_time: updated_time,
-        avatar: move_avatar(model.avatar, speed: model.speed, delta_time:),
-      )
+      Model(..model, current_time: updated_time)
+      |> move_avatar(delta_time:)
       |> change_rotation_by_dragging(delta_time)
     }
 
     // Keyboard.
     event.KeyboardPressed(event.KeyLeftArrow), NotPaused ->
-      change_rotation_by_keyboard(model, -1.0)
+      change_rotation(model, -1.0)
 
     event.KeyboardPressed(event.KeyRightArrow), NotPaused ->
-      change_rotation_by_keyboard(model, 1.0)
+      change_rotation(model, 1.0)
 
     event.KeyboardPressed(event.KeyUpArrow), NotPaused ->
       change_speed(model, 1.0)
@@ -180,18 +177,20 @@ fn flip_paused(paused: PauseStatus) -> PauseStatus {
   }
 }
 
-fn move_avatar(
-  avatar: Vector,
-  speed speed: Float,
-  delta_time delta_time: Float,
-) -> Vector {
-  let r = speed *. delta_time
-  let #(tx, ty) = maths.polar_to_cartesian(r, avatar.dir)
+fn move_avatar(model: Model, delta_time delta_time: Float) -> Model {
+  let r = model.speed *. delta_time
+  let #(tx, ty) = maths.polar_to_cartesian(r, model.avatar.dir)
 
-  Vector(..avatar, pos: vec2f.add(avatar.pos, Vec2(tx, ty)))
+  Model(
+    ..model,
+    avatar: Vector(
+      ..model.avatar,
+      pos: vec2f.add(model.avatar.pos, Vec2(tx, ty)),
+    ),
+  )
 }
 
-fn change_rotation_by_keyboard(model: Model, amount: Float) -> Model {
+fn change_rotation(model: Model, amount: Float) -> Model {
   Model(
     ..model,
     avatar: rotate_avatar(model.avatar, amount),
@@ -215,7 +214,7 @@ fn change_rotation_by_dragging(model: Model, delta_time: Float) -> Model {
         |> float.clamp(min: -0.02, max: 0.02)
       let rotate_amount = drag_factor *. delta_time
 
-      change_rotation_by_keyboard(model, rotate_amount)
+      change_rotation(model, rotate_amount)
     }
   }
 }
