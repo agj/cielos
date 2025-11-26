@@ -282,7 +282,17 @@ fn interpolate(from from: Float, to to: Float, by factor: Float) {
 fn view_star() -> p.Picture {
   let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
 
-  p.circle(300.0)
+  p.polygon(
+    list.range(0, 10)
+    |> list.map(fn(i) {
+      let angle = maths.tau() /. 10.0 *. int.to_float(i)
+      let r = case i % 2 {
+        0 -> 150.0
+        _ -> 80.0
+      }
+      maths.polar_to_cartesian(r, angle)
+    }),
+  )
   |> p.fill(star_color)
   |> p.stroke_none
 }
