@@ -306,6 +306,7 @@ fn view_star(current_time: Float) -> p.Picture {
     list.range(0, 10)
     |> list.map(fn(i) {
       let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
+      // Spike or valley in star geometry.
       let r = case i % 2 {
         0 -> 250.0
         _ -> 140.0
@@ -314,7 +315,7 @@ fn view_star(current_time: Float) -> p.Picture {
     }),
   )
   |> p.fill(star_color)
-  |> p.stroke_none
+  |> p.stroke(colour.orange, 10.0)
 }
 
 fn view_shadow() -> p.Picture {
