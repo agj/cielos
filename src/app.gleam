@@ -198,7 +198,7 @@ fn view(model: Model) -> p.Picture {
   let content =
     p.combine(
       model.objects
-      |> list.map(view_object(_, camera:)),
+      |> list.map(view_object(_, camera:, current_time: model.current_time)),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
@@ -207,11 +207,6 @@ fn view(model: Model) -> p.Picture {
 }
 
 fn view_background() -> p.Picture {
-  let #(sky_from_h, sky_from_s, sky_from_l) = #(0.85, 0.6, 0.9)
-  let #(sky_to_h, sky_to_s, sky_to_l) = #(0.7, 0.4, 0.98)
-  let #(clouds_from_h, clouds_from_s, clouds_from_l) = #(0.6, 0.6, 0.9)
-  let #(clouds_to_h, clouds_to_s, clouds_to_l) = #(0.7, 0.4, 0.98)
-
   [
     view_gradient(
       from_h: 0.85,
@@ -279,13 +274,13 @@ fn interpolate(from from: Float, to to: Float, by factor: Float) {
   { { to -. from } *. factor } +. from
 }
 
-fn view_star() -> p.Picture {
+fn view_star(current_time: Float) -> p.Picture {
   let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
-
+  let rotation = current_time /. 2000.0
   p.polygon(
     list.range(0, 10)
     |> list.map(fn(i) {
-      let angle = maths.tau() /. 10.0 *. int.to_float(i)
+      let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
       let r = case i % 2 {
         0 -> 150.0
         _ -> 80.0
@@ -305,7 +300,11 @@ fn view_shadow() -> p.Picture {
   |> p.stroke_none
 }
 
-fn view_object(object: Object, camera camera: Vector) -> p.Picture {
+fn view_object(
+  object: Object,
+  camera camera: Vector,
+  current_time current_time: Float,
+) -> p.Picture {
   let half_visible_angle = maths.degrees_to_radians(45.0)
   let angle_x_to_object =
     angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
@@ -329,16 +328,19 @@ fn view_object(object: Object, camera camera: Vector) -> p.Picture {
           float.negate(angle_y *. center.x /. half_visible_angle),
         )
 
-      get_picture_for_object(object.kind)
+      get_picture_for_object(object.kind, current_time)
       |> p.scale_uniform(scale)
       |> p.translate_xy(translation.x, translation.y)
     }
   }
 }
 
-fn get_picture_for_object(object_kind: ObjectKind) -> p.Picture {
+fn get_picture_for_object(
+  object_kind: ObjectKind,
+  current_time: Float,
+) -> p.Picture {
   case object_kind {
-    StarObject -> view_star()
+    StarObject -> view_star(current_time)
     ShadowObject -> view_shadow()
   }
 }
