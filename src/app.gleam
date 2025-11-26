@@ -231,6 +231,83 @@ fn view(model: Model) -> p.Picture {
   p.combine([view_background(), content])
 }
 
+// VIEW OBJECT
+
+fn view_object(
+  object: Object,
+  camera camera: Vector,
+  current_time current_time: Float,
+) -> p.Picture {
+  let half_visible_angle = maths.degrees_to_radians(45.0)
+  let angle_x_to_object =
+    angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
+  let angle_x = normalize_angle(angle_x_to_object -. camera.dir)
+
+  case float.absolute_value(angle_x) >. half_visible_angle {
+    True ->
+      // Object is not within camera's visible area.
+      p.blank()
+
+    False -> {
+      // Distance between camera and object.
+      let distance_x =
+        float.absolute_value(vec2f.distance(camera.pos, object.pos))
+      let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
+
+      let scale = get_scale(distance_x)
+      let translation =
+        Vec2(
+          angle_x *. center.x /. half_visible_angle,
+          float.negate(angle_y *. center.x /. half_visible_angle),
+        )
+
+      get_picture_for_object(object.kind, current_time)
+      |> p.scale_uniform(scale)
+      |> p.translate_xy(translation.x, translation.y)
+    }
+  }
+}
+
+fn get_picture_for_object(
+  object_kind: ObjectKind,
+  current_time: Float,
+) -> p.Picture {
+  case object_kind {
+    StarObject -> view_star(current_time)
+    ShadowObject -> view_shadow()
+  }
+}
+
+fn view_star(current_time: Float) -> p.Picture {
+  let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
+  let rotation = current_time /. 2000.0
+  p.polygon(
+    list.range(0, 10)
+    |> list.map(fn(i) {
+      let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
+      // Spike or valley in star geometry.
+      let r = case i % 2 {
+        0 -> 250.0
+        _ -> 140.0
+      }
+      maths.polar_to_cartesian(r, angle)
+    }),
+  )
+  |> p.fill(star_color)
+  |> p.stroke(colour.orange, 10.0)
+}
+
+fn view_shadow() -> p.Picture {
+  let assert Ok(shadow_color) = colour.from_hsla(0.75, 0.5, 0.4, 0.05)
+
+  p.rectangle(200.0, 5000.0)
+  |> p.translate_x(-100.0)
+  |> p.fill(shadow_color)
+  |> p.stroke_none
+}
+
+// VIEW BACKGROUND
+
 fn view_background() -> p.Picture {
   [
     view_gradient(
@@ -293,79 +370,6 @@ fn view_gradient(
     |> p.stroke_none
   })
   |> p.combine
-}
-
-fn view_star(current_time: Float) -> p.Picture {
-  let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
-  let rotation = current_time /. 2000.0
-  p.polygon(
-    list.range(0, 10)
-    |> list.map(fn(i) {
-      let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
-      // Spike or valley in star geometry.
-      let r = case i % 2 {
-        0 -> 250.0
-        _ -> 140.0
-      }
-      maths.polar_to_cartesian(r, angle)
-    }),
-  )
-  |> p.fill(star_color)
-  |> p.stroke(colour.orange, 10.0)
-}
-
-fn view_shadow() -> p.Picture {
-  let assert Ok(shadow_color) = colour.from_hsla(0.75, 0.5, 0.4, 0.05)
-
-  p.rectangle(200.0, 5000.0)
-  |> p.translate_x(-100.0)
-  |> p.fill(shadow_color)
-  |> p.stroke_none
-}
-
-fn view_object(
-  object: Object,
-  camera camera: Vector,
-  current_time current_time: Float,
-) -> p.Picture {
-  let half_visible_angle = maths.degrees_to_radians(45.0)
-  let angle_x_to_object =
-    angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
-  let angle_x = normalize_angle(angle_x_to_object -. camera.dir)
-
-  case float.absolute_value(angle_x) >. half_visible_angle {
-    True ->
-      // Object is not within camera's visible area.
-      p.blank()
-
-    False -> {
-      // Distance between camera and object.
-      let distance_x =
-        float.absolute_value(vec2f.distance(camera.pos, object.pos))
-      let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
-
-      let scale = get_scale(distance_x)
-      let translation =
-        Vec2(
-          angle_x *. center.x /. half_visible_angle,
-          float.negate(angle_y *. center.x /. half_visible_angle),
-        )
-
-      get_picture_for_object(object.kind, current_time)
-      |> p.scale_uniform(scale)
-      |> p.translate_xy(translation.x, translation.y)
-    }
-  }
-}
-
-fn get_picture_for_object(
-  object_kind: ObjectKind,
-  current_time: Float,
-) -> p.Picture {
-  case object_kind {
-    StarObject -> view_star(current_time)
-    ShadowObject -> view_shadow()
-  }
 }
 
 // UTILS
