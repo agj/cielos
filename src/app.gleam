@@ -295,10 +295,6 @@ fn view_gradient(
   |> p.combine
 }
 
-fn interpolate(from from: Float, to to: Float, by factor: Float) {
-  { { to -. from } *. factor } +. from
-}
-
 fn view_star(current_time: Float) -> p.Picture {
   let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
   let rotation = current_time /. 2000.0
@@ -374,6 +370,9 @@ fn get_picture_for_object(
 
 // UTILS
 
+/// Gets the direction (as an angle in radians) that the camera is facing at the
+/// current time, smoothing out rotation after user input, and with the avatar's
+/// direction as its base.
 fn get_camera_dir(
   camera: Camera,
   avatar_dir avatar_dir: Float,
@@ -405,11 +404,13 @@ fn get_scale(distance: Float) -> Float {
   peak /. { { distance /. gentleness } +. 1.0 }
 }
 
+/// Transforms polar coordinates to cartesian, and returns as a `Vec2` value.
 fn pos_from_polar(length length: Float, angle angle: Float) -> Vec2(Float) {
   let #(x, y) = maths.polar_to_cartesian(length, angle)
   Vec2(x, y)
 }
 
+/// Calculates the angle (in radians) between two 2D coordinates.
 fn angle_between(
   from_x from_x: Float,
   from_y from_y: Float,
@@ -430,4 +431,10 @@ fn normalize_angle(radians: Float) -> Float {
     r if r <=. minus_pi -> normalize_angle(r +. tau)
     r -> r
   }
+}
+
+/// Interpolates between two `Float` values `by` a factor from `0.0` through
+/// `1.0`.
+fn interpolate(from from: Float, to to: Float, by factor: Float) {
+  { { to -. from } *. factor } +. from
 }
