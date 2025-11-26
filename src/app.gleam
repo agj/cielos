@@ -16,24 +16,28 @@ pub fn main() {
 fn init(_config: canvas.Config) -> Model {
   let dir = 0.8 *. maths.tau()
 
-  let stars =
+  let objects =
     list.range(0, 200)
-    |> list.map(fn(i) {
+    |> list.flat_map(fn(i) {
       let i_f = int.to_float(i)
-      Object(
-        pos: pos_from_polar(
+      let pos =
+        pos_from_polar(
           length: { i_f +. 1.0 } *. 2.0 +. 10.0,
           angle: i_f /. 20.0 *. maths.tau(),
-        ),
-        height: maths.sin(i_f /. 5.0 *. maths.tau()),
-      )
+        )
+      let height = maths.sin(i_f /. 5.0 *. maths.tau())
+
+      [
+        Object(pos:, height:, kind: StarObject),
+        Object(pos:, height: -10.0, kind: ShadowObject),
+      ]
     })
 
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     speed: 0.01,
-    stars:,
+    objects:,
     mouse_pos: Vec2(0.0, 0.0),
     drag: NoDrag,
     current_time: 0.0,
@@ -61,7 +65,7 @@ type Model {
     avatar: Vector,
     camera: Camera,
     speed: Float,
-    stars: List(Object),
+    objects: List(Object),
     mouse_pos: Vec2(Float),
     drag: Drag,
     current_time: Float,
@@ -73,7 +77,12 @@ type Vector {
 }
 
 type Object {
-  Object(pos: Vec2(Float), height: Float)
+  Object(pos: Vec2(Float), height: Float, kind: ObjectKind)
+}
+
+type ObjectKind {
+  StarObject
+  ShadowObject
 }
 
 type Camera {
@@ -185,12 +194,11 @@ fn view(model: Model) -> p.Picture {
       ..model.avatar,
       dir: get_camera_dir(model.camera, model.avatar.dir, model.current_time),
     )
-  let picture = view_star()
 
   let content =
     p.combine(
-      model.stars
-      |> list.map(view_object(_, camera:, picture:)),
+      model.objects
+      |> list.map(view_object(_, camera:)),
     )
     // Center.
     |> p.translate_xy(center.x, center.y)
@@ -214,11 +222,15 @@ fn view_star() -> p.Picture {
   |> p.stroke_none
 }
 
-fn view_object(
-  object: Object,
-  camera camera: Vector,
-  picture picture: p.Picture,
-) -> p.Picture {
+fn view_shadow() -> p.Picture {
+  let assert Ok(shadow_color) = colour.from_hsla(0.85, 0.5, 0.4, 0.05)
+
+  p.rectangle(200.0, 5000.0)
+  |> p.fill(shadow_color)
+  |> p.stroke_none
+}
+
+fn view_object(object: Object, camera camera: Vector) -> p.Picture {
   let half_visible_angle = maths.degrees_to_radians(45.0)
   let angle_x_to_object =
     angle_between(camera.pos.x, camera.pos.y, object.pos.x, object.pos.y)
@@ -239,13 +251,20 @@ fn view_object(
       let translation =
         Vec2(
           angle_x *. center.x /. half_visible_angle,
-          angle_y *. center.x /. half_visible_angle,
+          float.negate(angle_y *. center.x /. half_visible_angle),
         )
 
-      picture
+      get_picture_for_object(object.kind)
       |> p.scale_uniform(scale)
       |> p.translate_xy(translation.x, translation.y)
     }
+  }
+}
+
+fn get_picture_for_object(object_kind: ObjectKind) -> p.Picture {
+  case object_kind {
+    StarObject -> view_star()
+    ShadowObject -> view_shadow()
   }
 }
 
