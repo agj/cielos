@@ -282,8 +282,8 @@ fn view_star(current_time: Float) -> p.Picture {
     |> list.map(fn(i) {
       let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
       let r = case i % 2 {
-        0 -> 150.0
-        _ -> 80.0
+        0 -> 250.0
+        _ -> 140.0
       }
       maths.polar_to_cartesian(r, angle)
     }),
