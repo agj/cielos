@@ -1,13 +1,17 @@
 # Cielos
 
-A simple game made by agj for the 2025 [Gleam Game
-Jam](https://gamejam.gleam.community/), under the theme “Lucy in the sky with
-diamonds”.
+A simple interactive experience inspired mechanically and aesthetically by Sega
+“blue sky” games like Space Harrier and Nights into Dreams.
 
-[**Play here ☁️**](https://agj.github.io/cielos/)
+[**Play here ⭐️☁️**](https://agj.github.io/cielos/)
 
-This game was written in the [Gleam](https://gleam.run/) programming language,
-using the [paint](https://hexdocs.pm/paint/paint/event.html) graphics library.
+Made by agj for the 2025 [Gleam Game Jam](https://gamejam.gleam.community/),
+under the theme “Lucy in the sky with diamonds”. Written in
+the [Gleam](https://gleam.run/) programming language, using the
+[paint](https://hexdocs.pm/paint/paint/event.html) graphics library.
+
+The typeface used within the game is an ad-hoc collection of glyphs drawn using
+a 12×12 grid.
 
 ## Development
 
