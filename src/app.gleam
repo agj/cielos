@@ -380,6 +380,186 @@ fn view_instructions(current_time: Float, consts: Consts) -> Picture {
   |> p.translate_x({ width *. 0.5 } -. { max_width *. 0.5 })
 }
 
+fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
+  p.combine([
+    p.circle(15.0)
+      |> p.fill(consts.color_white_transparent)
+      |> p.stroke_none,
+    case paused {
+      Paused ->
+        view_icon_play(consts.color_dark_blue)
+        |> p.translate_xy(-6.0, -6.0)
+      NotPaused ->
+        view_icon_pause(consts.color_dark_blue)
+        |> p.translate_xy(-6.0, -6.0)
+    },
+  ])
+}
+
+// VIEW OBJECT
+
+fn view_object(
+  object: Object,
+  horizontal_angle_from_camera_center angle_x: Float,
+  horizontal_distance_from_camera distance_x: Float,
+  current_time current_time: Float,
+  consts consts: Consts,
+) -> Picture {
+  let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
+  let is_far = distance_x >. 50.0
+  let scale = case is_far {
+    True -> 1.0
+    False -> get_scale(distance_x)
+  }
+  let translation =
+    Vec2(
+      angle_x *. center.x /. half_visible_angle,
+      float.negate(angle_y *. center.x /. half_visible_angle),
+    )
+
+  get_picture_for_object(object.kind, current_time, is_far, consts)
+  |> p.scale_uniform(scale)
+  |> p.translate_xy(translation.x, translation.y)
+}
+
+fn get_picture_for_object(
+  object_kind: ObjectKind,
+  current_time: Float,
+  far: Bool,
+  consts: Consts,
+) -> Picture {
+  case object_kind, far {
+    StarObject, False -> view_star(current_time, consts)
+    StarObject, True -> view_star_far(consts)
+    ShadowObject, False -> consts.shadow_picture
+    ShadowObject, True -> p.blank()
+  }
+}
+
+fn view_star(current_time: Float, consts: Consts) -> Picture {
+  let rotation = current_time /. 2000.0
+  p.polygon(
+    list.range(0, 10)
+    |> list.map(fn(i) {
+      let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
+      // Spike or valley in star geometry.
+      let r = case i % 2 {
+        0 -> 250.0
+        _ -> 140.0
+      }
+      maths.polar_to_cartesian(r, angle)
+    }),
+  )
+  |> p.fill(consts.color_yellow)
+  |> p.stroke(consts.color_orange, 10.0)
+}
+
+fn view_star_far(consts: Consts) -> Picture {
+  p.circle(1.0)
+  |> p.fill(consts.color_yellow)
+  |> p.stroke_none
+}
+
+fn view_shadow(color: Colour) -> Picture {
+  p.rectangle(200.0, 5000.0)
+  |> p.translate_x(-100.0)
+  |> p.fill(color)
+  |> p.stroke_none
+}
+
+// VIEW BACKGROUND
+
+fn view_background() -> Picture {
+  [
+    view_gradient(
+      from_h: 0.85,
+      to_h: 0.7,
+      from_s: 0.6,
+      to_s: 0.4,
+      from_l: 0.9,
+      to_l: 0.98,
+      width:,
+      height: height /. 2.0,
+      steps: 50,
+    ),
+    view_gradient(
+      from_h: 0.6,
+      to_h: 0.6,
+      from_s: 0.4,
+      to_s: 0.7,
+      from_l: 0.95,
+      to_l: 0.8,
+      width:,
+      height: height /. 2.0,
+      steps: 50,
+    )
+      |> p.translate_y(center.y),
+  ]
+  |> p.combine
+}
+
+fn view_gradient(
+  from_h from_h: Float,
+  from_s from_s: Float,
+  from_l from_l: Float,
+  to_h to_h: Float,
+  to_s to_s: Float,
+  to_l to_l: Float,
+  width width: Float,
+  height height: Float,
+  steps steps: Int,
+) -> Picture {
+  let steps_f = int.to_float(steps)
+  let stripe_height = float.floor(height /. steps_f)
+
+  list.range(0, steps)
+  |> list.map(fn(i) {
+    let i_f = int.to_float(i)
+    let factor = {
+      i_f /. { steps_f -. 1.0 }
+    }
+    let assert Ok(bg_color) =
+      colour.from_hsl(
+        interpolate(from: from_h, to: to_h, by: factor),
+        interpolate(from: from_s, to: to_s, by: factor),
+        interpolate(from: from_l, to: to_l, by: factor),
+      )
+
+    p.rectangle(width, stripe_height)
+    |> p.translate_y(stripe_height *. i_f)
+    |> p.fill(bg_color)
+    |> p.stroke_none
+  })
+  |> p.combine
+}
+
+// ICONS
+
+/// Pause icon, with dimensions 12×12 and origin on top left.
+fn view_icon_pause(color: Colour) -> Picture {
+  let bar = p.rectangle(4.0, 12.0)
+
+  p.combine([
+    bar,
+    bar |> p.translate_xy(8.0, 0.0),
+  ])
+  |> p.fill(color)
+  |> p.stroke_none
+}
+
+/// Play icon, with dimensions 12×12 and origin on top left.
+fn view_icon_play(color: Colour) -> Picture {
+  p.polygon([
+    #(2.0, 0.0),
+    #(11.0, 6.0),
+    #(2.0, 12.0),
+  ])
+  |> p.fill(color)
+  |> p.stroke_none
+}
+
+// VIEW TEXT
+
 fn view_wobbly_text(
   text: String,
   current_time current_time: Float,
@@ -675,184 +855,6 @@ fn view_letter(letter: String, color: Colour) -> Picture {
     _ -> p.blank()
   }
   |> p.stroke(color, 2.0)
-}
-
-fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
-  p.combine([
-    p.circle(15.0)
-      |> p.fill(consts.color_white_transparent)
-      |> p.stroke_none,
-    case paused {
-      Paused ->
-        view_icon_play(consts.color_dark_blue)
-        |> p.translate_xy(-6.0, -6.0)
-      NotPaused ->
-        view_icon_pause(consts.color_dark_blue)
-        |> p.translate_xy(-6.0, -6.0)
-    },
-  ])
-}
-
-// VIEW OBJECT
-
-fn view_object(
-  object: Object,
-  horizontal_angle_from_camera_center angle_x: Float,
-  horizontal_distance_from_camera distance_x: Float,
-  current_time current_time: Float,
-  consts consts: Consts,
-) -> Picture {
-  let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
-  let is_far = distance_x >. 50.0
-  let scale = case is_far {
-    True -> 1.0
-    False -> get_scale(distance_x)
-  }
-  let translation =
-    Vec2(
-      angle_x *. center.x /. half_visible_angle,
-      float.negate(angle_y *. center.x /. half_visible_angle),
-    )
-
-  get_picture_for_object(object.kind, current_time, is_far, consts)
-  |> p.scale_uniform(scale)
-  |> p.translate_xy(translation.x, translation.y)
-}
-
-fn get_picture_for_object(
-  object_kind: ObjectKind,
-  current_time: Float,
-  far: Bool,
-  consts: Consts,
-) -> Picture {
-  case object_kind, far {
-    StarObject, False -> view_star(current_time, consts)
-    StarObject, True -> view_star_far(consts)
-    ShadowObject, False -> consts.shadow_picture
-    ShadowObject, True -> p.blank()
-  }
-}
-
-fn view_star(current_time: Float, consts: Consts) -> Picture {
-  let rotation = current_time /. 2000.0
-  p.polygon(
-    list.range(0, 10)
-    |> list.map(fn(i) {
-      let angle = { maths.tau() /. 10.0 *. int.to_float(i) } +. rotation
-      // Spike or valley in star geometry.
-      let r = case i % 2 {
-        0 -> 250.0
-        _ -> 140.0
-      }
-      maths.polar_to_cartesian(r, angle)
-    }),
-  )
-  |> p.fill(consts.color_yellow)
-  |> p.stroke(consts.color_orange, 10.0)
-}
-
-fn view_star_far(consts: Consts) -> Picture {
-  p.circle(1.0)
-  |> p.fill(consts.color_yellow)
-  |> p.stroke_none
-}
-
-fn view_shadow(color: Colour) -> Picture {
-  p.rectangle(200.0, 5000.0)
-  |> p.translate_x(-100.0)
-  |> p.fill(color)
-  |> p.stroke_none
-}
-
-// VIEW BACKGROUND
-
-fn view_background() -> Picture {
-  [
-    view_gradient(
-      from_h: 0.85,
-      to_h: 0.7,
-      from_s: 0.6,
-      to_s: 0.4,
-      from_l: 0.9,
-      to_l: 0.98,
-      width:,
-      height: height /. 2.0,
-      steps: 50,
-    ),
-    view_gradient(
-      from_h: 0.6,
-      to_h: 0.6,
-      from_s: 0.4,
-      to_s: 0.7,
-      from_l: 0.95,
-      to_l: 0.8,
-      width:,
-      height: height /. 2.0,
-      steps: 50,
-    )
-      |> p.translate_y(center.y),
-  ]
-  |> p.combine
-}
-
-fn view_gradient(
-  from_h from_h: Float,
-  from_s from_s: Float,
-  from_l from_l: Float,
-  to_h to_h: Float,
-  to_s to_s: Float,
-  to_l to_l: Float,
-  width width: Float,
-  height height: Float,
-  steps steps: Int,
-) -> Picture {
-  let steps_f = int.to_float(steps)
-  let stripe_height = float.floor(height /. steps_f)
-
-  list.range(0, steps)
-  |> list.map(fn(i) {
-    let i_f = int.to_float(i)
-    let factor = {
-      i_f /. { steps_f -. 1.0 }
-    }
-    let assert Ok(bg_color) =
-      colour.from_hsl(
-        interpolate(from: from_h, to: to_h, by: factor),
-        interpolate(from: from_s, to: to_s, by: factor),
-        interpolate(from: from_l, to: to_l, by: factor),
-      )
-
-    p.rectangle(width, stripe_height)
-    |> p.translate_y(stripe_height *. i_f)
-    |> p.fill(bg_color)
-    |> p.stroke_none
-  })
-  |> p.combine
-}
-
-// ICONS
-
-/// Pause icon, with dimensions 12×12 and origin on top left.
-fn view_icon_pause(color: Colour) -> Picture {
-  let bar = p.rectangle(4.0, 12.0)
-
-  p.combine([
-    bar,
-    bar |> p.translate_xy(8.0, 0.0),
-  ])
-  |> p.fill(color)
-  |> p.stroke_none
-}
-
-/// Play icon, with dimensions 12×12 and origin on top left.
-fn view_icon_play(color: Colour) -> Picture {
-  p.polygon([
-    #(2.0, 0.0),
-    #(11.0, 6.0),
-    #(2.0, 12.0),
-  ])
-  |> p.fill(color)
-  |> p.stroke_none
 }
 
 // UTILS
