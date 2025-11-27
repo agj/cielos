@@ -3,6 +3,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/order
+import gleam/result
 import gleam/string
 import gleam_community/colour.{type Colour}
 import gleam_community/maths
@@ -315,8 +316,12 @@ fn view_ui(model: Model) -> Picture {
   p.combine([
     case model.paused {
       Paused ->
-        view_title(model.current_time, model.consts)
-        |> p.translate_xy(0.0, 80.0)
+        p.combine([
+          view_title(model.current_time, model.consts)
+            |> p.translate_xy(0.0, 80.0),
+          view_instructions(model.current_time, model.consts)
+            |> p.translate_xy(0.0, 200.0),
+        ])
       NotPaused -> p.blank()
     },
     view_pause_button(model.paused, model.consts)
@@ -348,6 +353,31 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
       |> p.translate_xy({ top_text_width } -. { bottom_text_width }, 40.0),
   ])
   |> p.translate_x({ width *. 0.5 } -. { top_text_width *. 0.5 })
+}
+
+/// Rendered already centered horizontally on the screen, though vertically it's
+/// at 0.
+fn view_instructions(current_time: Float, consts: Consts) -> Picture {
+  let texts = ["move ←→", "collect stars"]
+  let scale = 0.75
+  let max_width =
+    texts
+    |> list.sort(fn(a, b) {
+      order.negate(int.compare(string.length(a), string.length(b)))
+    })
+    |> list.first
+    |> result.map(calc_text_width(_, scale))
+    |> result.unwrap(0.0)
+
+  p.combine(
+    texts
+    |> list.index_map(fn(text, i) {
+      view_wobbly_text(text, current_time:, color: consts.color_dark_blue)
+      |> p.translate_y(char_width *. 2.5 *. int.to_float(i))
+    }),
+  )
+  |> p.scale_uniform(scale)
+  |> p.translate_x({ width *. 0.5 } -. { max_width *. 0.5 })
 }
 
 fn view_wobbly_text(
@@ -422,6 +452,11 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         #(11.0, 1.0),
         #(11.0, 3.0),
       ])
+
+    "d" ->
+      view_letter("b", color)
+      |> p.scale_x(-1.0)
+      |> p.translate_x(12.0)
 
     "e" ->
       p.lines([
@@ -504,6 +539,36 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         #(1.0, 0.0),
       ])
 
+    "m" ->
+      p.combine([
+        // Half-square going around.
+        p.lines([
+          // Bottom-left.
+          #(1.0, 12.0),
+          #(1.0, 1.0),
+          // Top-right.
+          #(11.0, 1.0),
+          #(11.0, 12.0),
+        ]),
+        // Middle stroke.
+        p.lines([
+          #(6.0, 1.0),
+          #(6.0, 12.0),
+        ]),
+      ])
+
+    "n" ->
+      p.lines([
+        // Bottom-left.
+        #(1.0, 12.0),
+        #(1.0, 1.0),
+        // Top-right.
+        #(9.0, 1.0),
+        #(9.0, 3.0),
+        #(11.0, 3.0),
+        #(11.0, 12.0),
+      ])
+
     "o" ->
       p.lines([
         // Top-left, going right.
@@ -512,6 +577,15 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         #(11.0, 11.0),
         #(1.0, 11.0),
         #(1.0, 1.0),
+      ])
+
+    "r" ->
+      p.lines([
+        // Bottom-left.
+        #(1.0, 12.0),
+        #(1.0, 1.0),
+        #(11.0, 1.0),
+        #(11.0, 3.0),
       ])
 
     "s" ->
@@ -526,6 +600,34 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         #(11.0, 11.0),
         #(1.0, 11.0),
         #(1.0, 9.0),
+      ])
+
+    "t" ->
+      p.combine([
+        // Cross-stroke.
+        p.lines([
+          #(0.0, 2.0),
+          #(12.0, 2.0),
+        ]),
+        // Stem.
+        p.lines([
+          // Top-left.
+          #(5.0, -1.0),
+          #(5.0, 11.0),
+          #(12.0, 11.0),
+        ]),
+      ])
+
+    "v" ->
+      p.lines([
+        // Top-right.
+        #(11.0, 0.0),
+        #(11.0, 11.0),
+        // Bottom-left.
+        #(3.0, 11.0),
+        #(3.0, 7.0),
+        #(1.0, 7.0),
+        #(1.0, 0.0),
       ])
 
     "y" ->
@@ -545,6 +647,30 @@ fn view_letter(letter: String, color: Colour) -> Picture {
           #(1.0, 0.0),
         ]),
       ])
+
+    "←" ->
+      p.combine([
+        // Angle.
+        p.lines([
+          // Bottom-mid.
+          #(6.0, 11.0),
+          #(5.0, 11.0),
+          #(1.0, 7.0),
+          #(1.0, 5.0),
+          #(5.0, 1.0),
+          #(6.0, 1.0),
+        ]),
+        // Middle stroke.
+        p.lines([
+          #(1.0, 6.0),
+          #(12.0, 6.0),
+        ]),
+      ])
+
+    "→" ->
+      view_letter("←", color)
+      |> p.rotate(p.angle_rad(maths.pi()))
+      |> p.translate_xy(12.0, 12.0)
 
     _ -> p.blank()
   }
