@@ -2,9 +2,9 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/order
-import gleam_community/colour
+import gleam_community/colour.{type Colour}
 import gleam_community/maths
-import paint as p
+import paint.{type Picture} as p
 import paint/canvas
 import paint/event
 import vec/vec2.{type Vec2, Vec2}
@@ -16,6 +16,11 @@ pub fn main() {
 
 fn init(_config: canvas.Config) -> Model {
   let dir = 0.8 *. maths.tau()
+  let assert Ok(color_white_transparent) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
+  let assert Ok(color_dark_blue) = colour.from_hsl(0.6, 0.7, 0.7)
+  let assert Ok(color_dark_blue_transparent) =
+    colour.from_hsla(0.75, 0.5, 0.4, 0.05)
+  let assert Ok(color_yellow) = colour.from_hsl(0.12, 1.0, 0.7)
 
   let objects =
     list.range(0, 200)
@@ -43,7 +48,15 @@ fn init(_config: canvas.Config) -> Model {
     drag: NoDrag,
     current_time: 0.0,
     paused: NotPaused,
-    consts: Consts(background_picture: view_background()),
+    consts: Consts(
+      background_picture: view_background(),
+      shadow_picture: view_shadow(color_dark_blue_transparent),
+      color_dark_blue:,
+      color_dark_blue_transparent:,
+      color_white_transparent:,
+      color_yellow:,
+      color_orange: colour.orange,
+    ),
   )
 }
 
@@ -108,7 +121,15 @@ type PauseStatus {
 }
 
 type Consts {
-  Consts(background_picture: p.Picture)
+  Consts(
+    background_picture: Picture,
+    shadow_picture: Picture,
+    color_dark_blue: Colour,
+    color_white_transparent: Colour,
+    color_yellow: Colour,
+    color_orange: Colour,
+    color_dark_blue_transparent: Colour,
+  )
 }
 
 // UPDATE
@@ -236,7 +257,7 @@ fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
 
 // VIEW
 
-fn view(model: Model) -> p.Picture {
+fn view(model: Model) -> Picture {
   let camera =
     Vector(
       ..model.avatar,
@@ -274,6 +295,7 @@ fn view(model: Model) -> p.Picture {
           horizontal_angle_from_camera_center: args.1,
           horizontal_distance_from_camera: args.2,
           current_time: model.current_time,
+          consts: model.consts,
         )
       }),
     )
@@ -283,25 +305,22 @@ fn view(model: Model) -> p.Picture {
   p.combine([model.consts.background_picture, content, view_ui(model)])
 }
 
-fn view_ui(model: Model) -> p.Picture {
-  view_pause_button(model.paused)
+fn view_ui(model: Model) -> Picture {
+  view_pause_button(model.paused, model.consts)
   |> p.translate_xy(17.0, height -. 17.0)
 }
 
-fn view_pause_button(paused: PauseStatus) -> p.Picture {
-  let assert Ok(bg_color) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
-  let assert Ok(icon_color) = colour.from_hsl(0.6, 0.7, 0.7)
-
+fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
   p.combine([
     p.circle(15.0)
-      |> p.fill(bg_color)
+      |> p.fill(consts.color_white_transparent)
       |> p.stroke_none,
     case paused {
       Paused ->
-        view_icon_play(icon_color)
+        view_icon_play(consts.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
       NotPaused ->
-        view_icon_pause(icon_color)
+        view_icon_pause(consts.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
     },
   ])
@@ -314,7 +333,8 @@ fn view_object(
   horizontal_angle_from_camera_center angle_x: Float,
   horizontal_distance_from_camera distance_x: Float,
   current_time current_time: Float,
-) -> p.Picture {
+  consts consts: Consts,
+) -> Picture {
   let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
 
   let scale = get_scale(distance_x)
@@ -324,7 +344,7 @@ fn view_object(
       float.negate(angle_y *. center.x /. half_visible_angle),
     )
 
-  get_picture_for_object(object.kind, current_time)
+  get_picture_for_object(object.kind, current_time, consts)
   |> p.scale_uniform(scale)
   |> p.translate_xy(translation.x, translation.y)
 }
@@ -332,15 +352,15 @@ fn view_object(
 fn get_picture_for_object(
   object_kind: ObjectKind,
   current_time: Float,
-) -> p.Picture {
+  consts: Consts,
+) -> Picture {
   case object_kind {
-    StarObject -> view_star(current_time)
-    ShadowObject -> view_shadow()
+    StarObject -> view_star(current_time, consts)
+    ShadowObject -> consts.shadow_picture
   }
 }
 
-fn view_star(current_time: Float) -> p.Picture {
-  let assert Ok(star_color) = colour.from_hsl(0.12, 1.0, 0.7)
+fn view_star(current_time: Float, consts: Consts) -> Picture {
   let rotation = current_time /. 2000.0
   p.polygon(
     list.range(0, 10)
@@ -354,22 +374,20 @@ fn view_star(current_time: Float) -> p.Picture {
       maths.polar_to_cartesian(r, angle)
     }),
   )
-  |> p.fill(star_color)
-  |> p.stroke(colour.orange, 10.0)
+  |> p.fill(consts.color_yellow)
+  |> p.stroke(consts.color_orange, 10.0)
 }
 
-fn view_shadow() -> p.Picture {
-  let assert Ok(shadow_color) = colour.from_hsla(0.75, 0.5, 0.4, 0.05)
-
+fn view_shadow(color: Colour) -> Picture {
   p.rectangle(200.0, 5000.0)
   |> p.translate_x(-100.0)
-  |> p.fill(shadow_color)
+  |> p.fill(color)
   |> p.stroke_none
 }
 
 // VIEW BACKGROUND
 
-fn view_background() -> p.Picture {
+fn view_background() -> Picture {
   [
     view_gradient(
       from_h: 0.85,
@@ -408,7 +426,7 @@ fn view_gradient(
   width width: Float,
   height height: Float,
   steps steps: Int,
-) -> p.Picture {
+) -> Picture {
   let steps_f = int.to_float(steps)
   let stripe_height = float.floor(height /. steps_f)
 
@@ -436,7 +454,7 @@ fn view_gradient(
 // ICONS
 
 /// Pause icon, with dimensions 12×12 and origin on top left.
-fn view_icon_pause(color: colour.Colour) -> p.Picture {
+fn view_icon_pause(color: Colour) -> Picture {
   let bar = p.rectangle(4.0, 12.0)
 
   p.combine([
@@ -448,7 +466,7 @@ fn view_icon_pause(color: colour.Colour) -> p.Picture {
 }
 
 /// Play icon, with dimensions 12×12 and origin on top left.
-fn view_icon_play(color: colour.Colour) -> p.Picture {
+fn view_icon_play(color: Colour) -> Picture {
   p.polygon([
     #(2.0, 0.0),
     #(11.0, 6.0),
