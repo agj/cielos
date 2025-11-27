@@ -2,6 +2,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/order
+import gleam/string
 import gleam_community/colour.{type Colour}
 import gleam_community/maths
 import paint.{type Picture} as p
@@ -47,7 +48,7 @@ fn init(_config: canvas.Config) -> Model {
     mouse_pos: Vec2(0.0, 0.0),
     drag: NoDrag,
     current_time: 0.0,
-    paused: NotPaused,
+    paused: Paused,
     consts: Consts(
       background_picture: view_background(),
       shadow_picture: view_shadow(color_dark_blue_transparent),
@@ -306,8 +307,52 @@ fn view(model: Model) -> Picture {
 }
 
 fn view_ui(model: Model) -> Picture {
-  view_pause_button(model.paused, model.consts)
-  |> p.translate_xy(17.0, height -. 17.0)
+  p.combine([
+    case model.paused {
+      Paused ->
+        view_title(model.current_time, model.consts)
+        |> p.translate_xy(80.0, 80.0)
+      NotPaused -> p.blank()
+    },
+    view_pause_button(model.paused, model.consts)
+      |> p.translate_xy(17.0, height -. 17.0),
+  ])
+}
+
+fn view_title(current_time: Float, consts: Consts) -> Picture {
+  p.combine([
+    view_wobbly_text("CIELOS", current_time:, color: consts.color_dark_blue),
+    view_wobbly_text("BY AGJ", current_time:, color: consts.color_dark_blue)
+      |> p.translate_xy(50.0, 50.0),
+  ])
+}
+
+fn view_wobbly_text(
+  text: String,
+  current_time current_time: Float,
+  color color: Colour,
+) -> Picture {
+  string.split(text, on: "")
+  |> list.index_map(fn(char, i) {
+    view_oscillating_text(
+      char,
+      current_time: current_time +. { int.to_float(i) *. 8000.0 },
+      color:,
+    )
+    |> p.translate_x(int.to_float(i) *. 20.0)
+  })
+  |> p.combine
+}
+
+fn view_oscillating_text(
+  text: String,
+  current_time current_time: Float,
+  color color: Colour,
+) -> Picture {
+  p.text(text, 20)
+  |> p.fill(color)
+  |> p.stroke_none
+  |> p.translate_xy(0.0, maths.sin(current_time /. 1600.0) *. 12.0)
 }
 
 fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
