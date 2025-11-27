@@ -56,6 +56,7 @@ fn init(_config: canvas.Config) -> Model {
       shadow_picture: view_shadow(color_dark_blue_transparent),
       color_dark_blue:,
       color_dark_blue_transparent:,
+      color_white: colour.white,
       color_white_transparent:,
       color_yellow:,
       color_orange: colour.orange,
@@ -110,6 +111,7 @@ type Object {
 
 type ObjectKind {
   StarObject
+  CollectedStarObject
   ShadowObject
 }
 
@@ -132,6 +134,7 @@ type Consts {
     background_picture: Picture,
     shadow_picture: Picture,
     color_dark_blue: Colour,
+    color_white: Colour,
     color_white_transparent: Colour,
     color_yellow: Colour,
     color_orange: Colour,
@@ -152,6 +155,7 @@ fn update(model: Model, event: event.Event) -> Model {
       Model(..model, current_time: updated_time)
       |> move_avatar(delta_time:)
       |> change_rotation_by_dragging(delta_time)
+      |> check_collisions
     }
 
     // Keyboard.
@@ -192,6 +196,22 @@ fn update(model: Model, event: event.Event) -> Model {
     // Ignore other events.
     _, _ -> model
   }
+}
+
+fn check_collisions(model: Model) -> Model {
+  let non_collided_objects =
+    model.objects
+    |> list.map(fn(object) {
+      case
+        { object.kind == StarObject }
+        && { vec2f.distance(model.avatar.pos, object.pos) <. 0.8 }
+      {
+        True -> Object(..object, kind: CollectedStarObject)
+        False -> object
+      }
+    })
+
+  Model(..model, objects: non_collided_objects)
 }
 
 fn change_paused(model: Model, new_paused: PauseStatus) -> Model {
@@ -466,15 +486,27 @@ fn get_picture_for_object(
   consts: Consts,
 ) -> Picture {
   case object_kind, far {
-    StarObject, False -> view_star(current_time, consts)
-    StarObject, True -> view_star_far(consts)
+    StarObject, False -> view_star(current_time, consts, collected: False)
+    StarObject, True -> view_star_far(consts, collected: False)
+    CollectedStarObject, False ->
+      view_star(current_time, consts, collected: True)
+    CollectedStarObject, True -> view_star_far(consts, collected: True)
     ShadowObject, False -> consts.shadow_picture
     ShadowObject, True -> p.blank()
   }
 }
 
-fn view_star(current_time: Float, consts: Consts) -> Picture {
+fn view_star(
+  current_time: Float,
+  consts: Consts,
+  collected collected: Bool,
+) -> Picture {
+  let fill_color = case collected {
+    True -> consts.color_white
+    False -> consts.color_yellow
+  }
   let rotation = current_time /. 2000.0
+
   p.polygon(
     list.range(0, 10)
     |> list.map(fn(i) {
@@ -487,13 +519,18 @@ fn view_star(current_time: Float, consts: Consts) -> Picture {
       maths.polar_to_cartesian(r, angle)
     }),
   )
-  |> p.fill(consts.color_yellow)
+  |> p.fill(fill_color)
   |> p.stroke(consts.color_orange, 10.0)
 }
 
-fn view_star_far(consts: Consts) -> Picture {
+fn view_star_far(consts: Consts, collected collected: Bool) -> Picture {
+  let color = case collected {
+    True -> consts.color_white
+    False -> consts.color_yellow
+  }
+
   p.circle(1.0)
-  |> p.fill(consts.color_yellow)
+  |> p.fill(color)
   |> p.stroke_none
 }
 
