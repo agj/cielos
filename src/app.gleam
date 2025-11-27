@@ -79,6 +79,10 @@ const rotation_speed = 0.09
 // tau / 8
 const half_visible_angle = 0.7853981634
 
+const char_width = 12.0
+
+const char_spacing = 3.0
+
 // MODEL
 
 type Model {
@@ -312,7 +316,7 @@ fn view_ui(model: Model) -> Picture {
     case model.paused {
       Paused ->
         view_title(model.current_time, model.consts)
-        |> p.translate_xy(80.0, 80.0)
+        |> p.translate_xy(0.0, 80.0)
       NotPaused -> p.blank()
     },
     view_pause_button(model.paused, model.consts)
@@ -320,12 +324,30 @@ fn view_ui(model: Model) -> Picture {
   ])
 }
 
+fn calc_text_width(text: String, scale: Float) -> Float {
+  let length = int.to_float(string.length(text))
+
+  { { { char_width +. char_spacing } *. length } -. char_spacing } *. scale
+}
+
+/// Rendered already centered horizontally on the screen, though vertically it's
+/// at 0.
 fn view_title(current_time: Float, consts: Consts) -> Picture {
+  let top_text = "cielos"
+  let top_text_scale = 1.5
+  let top_text_width = calc_text_width(top_text, top_text_scale)
+  let bottom_text = "by agj"
+  let bottom_text_scale = 0.75
+  let bottom_text_width = calc_text_width(bottom_text, bottom_text_scale)
+
   p.combine([
-    view_wobbly_text("cielos", current_time:, color: consts.color_dark_blue),
-    view_wobbly_text("by agj", current_time:, color: consts.color_dark_blue)
-      |> p.translate_xy(50.0, 50.0),
+    view_wobbly_text(top_text, current_time:, color: consts.color_dark_blue)
+      |> p.scale_uniform(top_text_scale),
+    view_wobbly_text(bottom_text, current_time:, color: consts.color_dark_blue)
+      |> p.scale_uniform(bottom_text_scale)
+      |> p.translate_xy({ top_text_width } -. { bottom_text_width }, 40.0),
   ])
+  |> p.translate_x({ width *. 0.5 } -. { top_text_width *. 0.5 })
 }
 
 fn view_wobbly_text(
@@ -335,17 +357,17 @@ fn view_wobbly_text(
 ) -> Picture {
   string.split(text, on: "")
   |> list.index_map(fn(char, i) {
-    view_oscillating_letter(
+    view_wobbly_letter(
       char,
       current_time: current_time +. { int.to_float(i) *. 8000.0 },
       color:,
     )
-    |> p.translate_x(int.to_float(i) *. { 12.0 +. 3.0 })
+    |> p.translate_x(int.to_float(i) *. { char_width +. char_spacing })
   })
   |> p.combine
 }
 
-fn view_oscillating_letter(
+fn view_wobbly_letter(
   letter: String,
   current_time current_time: Float,
   color color: Colour,
@@ -358,7 +380,7 @@ fn view_oscillating_letter(
   |> p.stroke_none
   |> p.translate_xy(-6.0, -6.0)
   |> p.rotate(p.angle_rad(rotation))
-  |> p.translate_xy(0.0, y_translation)
+  |> p.translate_xy(6.0, 6.0 +. y_translation)
 }
 
 /// Letter drawn on a 12×12 grid (some features pop out from the top and
