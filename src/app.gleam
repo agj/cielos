@@ -237,9 +237,24 @@ fn change_rotation_by_dragging(model: Model, delta_time: Float) -> Model {
   case model.drag {
     NoDrag -> model
     Dragging(start_pos:) -> {
+      // Actual dead zone is double this, as it extends in both directions.
+      let dead_zone = 2.0
+      let dampen_factor = 0.00001
+      let mouse_x_movement = model.mouse_pos.x -. start_pos.x
+      let x_movement =
+        case mouse_x_movement >. 0.0 {
+          True ->
+            float.max(0.0, mouse_x_movement -. dead_zone)
+            |> float.power(2.0)
+          False ->
+            float.min(0.0, mouse_x_movement +. dead_zone)
+            |> float.power(2.0)
+            |> result.map(float.negate)
+        }
+        |> result.unwrap(0.0)
       let drag_factor =
-        { model.mouse_pos.x -. start_pos.x } *. 0.001
-        |> float.clamp(min: -0.02, max: 0.02)
+        x_movement *. dampen_factor
+        |> float.clamp(min: -0.03, max: 0.03)
       let rotate_amount = drag_factor *. delta_time
 
       change_rotation(model, rotate_amount)
@@ -866,7 +881,7 @@ fn get_camera_dir(
   avatar_dir avatar_dir: Float,
   current_time current_time: Float,
 ) -> Float {
-  let total_time = 100.0
+  let total_time = 50.0
   let start_time = camera.start_move_time
   let end_time = start_time +. total_time
 
