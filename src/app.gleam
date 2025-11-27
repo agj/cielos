@@ -386,13 +386,12 @@ fn view_letter(letter: String, color: Colour) -> Picture {
     "c" ->
       p.lines([
         // Bottom-right.
-        #(11.0, 9.0),
         #(11.0, 11.0),
         #(1.0, 11.0),
         // Top-left.
         #(1.0, 1.0),
-        #(10.0, 1.0),
-        #(10.0, 3.0),
+        #(11.0, 1.0),
+        #(11.0, 3.0),
       ])
 
     "e" ->
@@ -489,8 +488,7 @@ fn view_letter(letter: String, color: Colour) -> Picture {
     "s" ->
       p.lines([
         // Top-right.
-        #(10.0, 3.0),
-        #(10.0, 1.0),
+        #(11.0, 1.0),
         #(2.0, 1.0),
         // Mid-left.
         #(2.0, 6.0),
