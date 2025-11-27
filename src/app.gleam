@@ -657,9 +657,9 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         p.lines([
           // Top-left.
           #(0.0, 1.0),
-          #(11.0, 1.0),
+          #(10.0, 1.0),
           // Mid-right.
-          #(11.0, 7.0),
+          #(10.0, 7.0),
           #(1.0, 7.0),
           #(1.0, 1.0),
         ]),
