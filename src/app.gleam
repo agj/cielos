@@ -340,7 +340,7 @@ fn view_wobbly_text(
       current_time: current_time +. { int.to_float(i) *. 8000.0 },
       color:,
     )
-    |> p.translate_x(int.to_float(i) *. 20.0)
+    |> p.translate_x(int.to_float(i) *. { 12.0 +. 3.0 })
   })
   |> p.combine
 }
@@ -350,12 +350,19 @@ fn view_oscillating_letter(
   current_time current_time: Float,
   color color: Colour,
 ) -> Picture {
+  let rotation = maths.sin(current_time /. 400.0) *. 0.1
+  let y_translation = maths.sin(current_time /. 1600.0) *. 6.0
+
   view_letter(letter, color)
   |> p.fill(color)
   |> p.stroke_none
-  |> p.translate_xy(0.0, maths.sin(current_time /. 1600.0) *. 12.0)
+  |> p.translate_xy(-6.0, -6.0)
+  |> p.rotate(p.angle_rad(rotation))
+  |> p.translate_xy(0.0, y_translation)
 }
 
+/// Letter drawn on a 12×12 grid (some features pop out from the top and
+/// bottom), with origin on the top-left.
 fn view_letter(letter: String, color: Colour) -> Picture {
   // In most cases, stroke follows a clockwise motion.
   case letter {
