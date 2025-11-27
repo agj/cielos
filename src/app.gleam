@@ -339,7 +339,7 @@ fn view_ui(model: Model) -> Picture {
         ])
       NotPaused -> p.blank()
     },
-    view_pause_button(model.paused, model.consts)
+    view_pause_button(model.paused, model.current_time, model.consts)
       |> p.translate_xy(17.0, height -. 17.0),
   ])
 }
@@ -395,15 +395,37 @@ fn view_instructions(current_time: Float, consts: Consts) -> Picture {
   |> p.translate_x({ width *. 0.5 } -. { max_width *. 0.5 })
 }
 
-fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
+fn view_pause_button(
+  paused: PauseStatus,
+  current_time: Float,
+  consts: Consts,
+) -> Picture {
   p.combine([
     p.circle(15.0)
       |> p.fill(consts.color_white_transparent)
       |> p.stroke_none,
     case paused {
-      Paused ->
-        view_icon_play(consts.color_dark_blue)
-        |> p.translate_xy(-6.0, -6.0)
+      Paused -> {
+        let label_text = "esc"
+        let label_scale = 0.5
+        let label =
+          view_wobbly_text(
+            label_text,
+            current_time,
+            consts.color_white_transparent,
+          )
+          |> p.scale_uniform(label_scale)
+
+        p.combine([
+          view_icon_play(consts.color_dark_blue)
+            |> p.translate_xy(-6.0, -6.0),
+          label
+            |> p.translate_xy(
+              calc_text_width(label_text, label_scale) *. -0.5,
+              -27.0,
+            ),
+        ])
+      }
       NotPaused ->
         view_icon_pause(consts.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
