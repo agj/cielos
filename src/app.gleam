@@ -336,15 +336,18 @@ fn view_object(
   consts consts: Consts,
 ) -> Picture {
   let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
-
-  let scale = get_scale(distance_x)
+  let is_far = distance_x >. 50.0
+  let scale = case is_far {
+    True -> 1.0
+    False -> get_scale(distance_x)
+  }
   let translation =
     Vec2(
       angle_x *. center.x /. half_visible_angle,
       float.negate(angle_y *. center.x /. half_visible_angle),
     )
 
-  get_picture_for_object(object.kind, current_time, consts)
+  get_picture_for_object(object.kind, current_time, is_far, consts)
   |> p.scale_uniform(scale)
   |> p.translate_xy(translation.x, translation.y)
 }
@@ -352,11 +355,14 @@ fn view_object(
 fn get_picture_for_object(
   object_kind: ObjectKind,
   current_time: Float,
+  far: Bool,
   consts: Consts,
 ) -> Picture {
-  case object_kind {
-    StarObject -> view_star(current_time, consts)
-    ShadowObject -> consts.shadow_picture
+  case object_kind, far {
+    StarObject, False -> view_star(current_time, consts)
+    StarObject, True -> view_star_far(consts)
+    ShadowObject, False -> consts.shadow_picture
+    ShadowObject, True -> p.blank()
   }
 }
 
@@ -376,6 +382,12 @@ fn view_star(current_time: Float, consts: Consts) -> Picture {
   )
   |> p.fill(consts.color_yellow)
   |> p.stroke(consts.color_orange, 10.0)
+}
+
+fn view_star_far(consts: Consts) -> Picture {
+  p.circle(1.0)
+  |> p.fill(consts.color_yellow)
+  |> p.stroke_none
 }
 
 fn view_shadow(color: Colour) -> Picture {
