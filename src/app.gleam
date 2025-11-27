@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
@@ -321,8 +322,8 @@ fn view_ui(model: Model) -> Picture {
 
 fn view_title(current_time: Float, consts: Consts) -> Picture {
   p.combine([
-    view_wobbly_text("CIELOS", current_time:, color: consts.color_dark_blue),
-    view_wobbly_text("BY AGJ", current_time:, color: consts.color_dark_blue)
+    view_wobbly_text("cielos", current_time:, color: consts.color_dark_blue),
+    view_wobbly_text("by agj", current_time:, color: consts.color_dark_blue)
       |> p.translate_xy(50.0, 50.0),
   ])
 }
@@ -334,7 +335,7 @@ fn view_wobbly_text(
 ) -> Picture {
   string.split(text, on: "")
   |> list.index_map(fn(char, i) {
-    view_oscillating_text(
+    view_oscillating_letter(
       char,
       current_time: current_time +. { int.to_float(i) *. 8000.0 },
       color:,
@@ -344,15 +345,183 @@ fn view_wobbly_text(
   |> p.combine
 }
 
-fn view_oscillating_text(
-  text: String,
+fn view_oscillating_letter(
+  letter: String,
   current_time current_time: Float,
   color color: Colour,
 ) -> Picture {
-  p.text(text, 20)
+  view_letter(letter, color)
   |> p.fill(color)
   |> p.stroke_none
   |> p.translate_xy(0.0, maths.sin(current_time /. 1600.0) *. 12.0)
+}
+
+fn view_letter(letter: String, color: Colour) -> Picture {
+  // In most cases, stroke follows a clockwise motion.
+  case letter {
+    "a" ->
+      p.lines([
+        // Top-left.
+        #(3.0, 1.0),
+        #(11.0, 1.0),
+        // Bottom-right.
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        // Mid-left.
+        #(1.0, 5.0),
+        #(11.0, 5.0),
+      ])
+
+    "b" ->
+      p.lines([
+        // Top-left, going right.
+        #(1.0, 3.0),
+        #(11.0, 3.0),
+        // Bottom-left.
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        #(1.0, -1.0),
+      ])
+
+    "c" ->
+      p.lines([
+        // Bottom-right.
+        #(11.0, 9.0),
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        // Top-left.
+        #(1.0, 1.0),
+        #(10.0, 1.0),
+        #(10.0, 3.0),
+      ])
+
+    "e" ->
+      p.lines([
+        // Bottom-right.
+        #(9.0, 11.0),
+        #(1.0, 11.0),
+        // Top-left.
+        #(1.0, 1.0),
+        #(11.0, 1.0),
+        // Mid-right.
+        #(11.0, 7.0),
+        #(1.0, 7.0),
+      ])
+
+    "g" ->
+      p.combine([
+        // Top.
+        p.lines([
+          // Top-left.
+          #(0.0, 1.0),
+          #(11.0, 1.0),
+          // Mid-right.
+          #(11.0, 7.0),
+          #(1.0, 7.0),
+          #(1.0, 1.0),
+        ]),
+        // Bottom.
+        p.lines([
+          // Mid-left.
+          #(3.0, 7.0),
+          #(3.0, 11.0),
+          #(11.0, 11.0),
+          #(11.0, 13.0),
+        ]),
+      ])
+
+    "i" ->
+      p.combine([
+        // Dot.
+        p.lines([
+          #(6.0, -2.0),
+          #(6.0, 0.0),
+        ]),
+        // Stem.
+        p.lines([
+          // Top-left.
+          #(2.0, 3.0),
+          #(6.0, 3.0),
+          #(6.0, 11.0),
+        ]),
+        // Bottom serif.
+        p.lines([
+          #(0.0, 11.0),
+          #(12.0, 11.0),
+        ]),
+      ])
+
+    "j" ->
+      p.combine([
+        // Dot.
+        p.lines([
+          #(11.0, -2.0),
+          #(11.0, 0.0),
+        ]),
+        // Body.
+        p.lines([
+          // Top-right.
+          #(11.0, 2.0),
+          #(11.0, 11.0),
+          #(1.0, 11.0),
+          #(1.0, 9.0),
+        ]),
+      ])
+
+    "l" ->
+      p.lines([
+        // Bottom-right.
+        #(12.0, 11.0),
+        #(1.0, 11.0),
+        #(1.0, 0.0),
+      ])
+
+    "o" ->
+      p.lines([
+        // Top-left, going right.
+        #(0.0, 1.0),
+        #(11.0, 1.0),
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        #(1.0, 1.0),
+      ])
+
+    "s" ->
+      p.lines([
+        // Top-right.
+        #(10.0, 3.0),
+        #(10.0, 1.0),
+        #(2.0, 1.0),
+        // Mid-left.
+        #(2.0, 6.0),
+        #(11.0, 6.0),
+        // Bottom-right.
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        #(1.0, 9.0),
+      ])
+
+    "y" ->
+      p.combine([
+        // Right stroke.
+        p.lines([
+          // Top-right.
+          #(11.0, 0.0),
+          #(11.0, 13.0),
+          #(1.0, 13.0),
+        ]),
+        // Left stroke.
+        p.lines([
+          // Mid-right.
+          #(11.0, 9.0),
+          #(1.0, 9.0),
+          #(1.0, 0.0),
+        ]),
+      ])
+
+    _ -> p.blank()
+  }
+  |> p.stroke(color, 2.0)
 }
 
 fn view_pause_button(paused: PauseStatus, consts: Consts) -> Picture {
