@@ -803,10 +803,9 @@ fn view_letter(letter: String, color: Colour) -> Picture {
         // Top-right.
         #(11.0, 0.0),
         #(11.0, 11.0),
-        // Bottom-left.
-        #(3.0, 11.0),
-        #(3.0, 7.0),
-        #(1.0, 7.0),
+        // Bottom-left (entering corner).
+        #(4.0, 11.0),
+        #(1.0, 8.0),
         #(1.0, 0.0),
       ])
 
