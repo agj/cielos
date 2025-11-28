@@ -27,7 +27,7 @@ fn init(_config: canvas.Config) -> Model {
 
   let objects =
     list.range(0, 200)
-    |> list.flat_map(fn(i) {
+    |> list.map(fn(i) {
       let i_f = int.to_float(i)
       let pos =
         pos_from_polar(
@@ -36,10 +36,7 @@ fn init(_config: canvas.Config) -> Model {
         )
       let height = maths.sin(i_f /. 5.0 *. maths.tau())
 
-      [
-        Object(pos:, height:, kind: StarObject),
-        Object(pos:, height: -10.0, kind: ShadowObject),
-      ]
+      Object(pos:, height:, kind: StarObject)
     })
 
   Model(
@@ -112,7 +109,6 @@ type Object {
 type ObjectKind {
   StarObject
   CollectedStarObject
-  ShadowObject
 }
 
 type Camera {
@@ -457,26 +453,48 @@ fn view_pause_button(
 
 fn view_object(
   object: Object,
-  horizontal_angle_from_camera_center angle_x: Float,
-  horizontal_distance_from_camera distance_x: Float,
+  horizontal_angle_from_camera_center angle_hor: Float,
+  horizontal_distance_from_camera distance_hor: Float,
   current_time current_time: Float,
   consts consts: Consts,
 ) -> Picture {
-  let angle_y = angle_between(0.0, 0.0, distance_x, object.height)
-  let is_far = distance_x >. 50.0
+  let angle_ver = angle_between(0.0, 0.0, distance_hor, object.height)
+  let is_far = distance_hor >. 50.0
   let scale = case is_far {
     True -> 1.0
-    False -> get_scale(distance_x)
+    False -> get_scale(distance_hor)
   }
   let translation =
     Vec2(
-      angle_x *. center.x /. half_visible_angle,
-      float.negate(angle_y *. center.x /. half_visible_angle),
+      angle_hor *. center.x /. half_visible_angle,
+      float.negate(angle_ver *. center.x /. half_visible_angle),
     )
 
-  get_picture_for_object(object.kind, current_time, is_far, consts)
-  |> p.scale_uniform(scale)
-  |> p.translate_xy(translation.x, translation.y)
+  let object_picture =
+    get_picture_for_object(object.kind, current_time, is_far, consts)
+    |> p.scale_uniform(scale)
+    |> p.translate_xy(translation.x, translation.y)
+
+  let shadow_picture = case is_far {
+    True -> p.blank()
+
+    False -> {
+      let shadow_height = -10.0
+      let shadow_angle_ver =
+        angle_between(0.0, 0.0, distance_hor, shadow_height)
+      let shadow_translation =
+        Vec2(
+          translation.x,
+          float.negate(shadow_angle_ver *. center.x /. half_visible_angle),
+        )
+
+      consts.shadow_picture
+      |> p.scale_uniform(scale)
+      |> p.translate_xy(shadow_translation.x, shadow_translation.y)
+    }
+  }
+
+  p.combine([shadow_picture, object_picture])
 }
 
 fn get_picture_for_object(
@@ -491,8 +509,6 @@ fn get_picture_for_object(
     CollectedStarObject, False ->
       view_star(current_time, consts, collected: True)
     CollectedStarObject, True -> view_star_far(consts, collected: True)
-    ShadowObject, False -> consts.shadow_picture
-    ShadowObject, True -> p.blank()
   }
 }
 
