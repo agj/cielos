@@ -50,6 +50,10 @@ fn init(_config: canvas.Config) -> Model {
     drag: NoDrag,
     current_time: 0.0,
     paused: Paused,
+    press_regions: list.flatten([
+      [pause_press_region()],
+      links_press_regions(),
+    ]),
     consts: Consts(
       background_picture: view_background(),
       shadow_picture: view_shadow(color_dark_blue_transparent),
@@ -75,6 +79,7 @@ type Model {
     drag: Drag,
     current_time: Float,
     paused: PauseStatus,
+    press_regions: List(PressRegion),
     consts: Consts,
   )
 }
@@ -104,6 +109,16 @@ type Drag {
 type PauseStatus {
   Paused
   NotPaused
+}
+
+type PressRegion {
+  PressRegion(
+    x: Float,
+    y: Float,
+    width: Float,
+    height: Float,
+    on_press: fn(Model) -> Model,
+  )
 }
 
 type Consts {
@@ -154,19 +169,29 @@ fn update(model: Model, event: event.Event) -> Model {
     // Mouse.
     event.MouseMoved(x, y), _ -> Model(..model, mouse_pos: Vec2(x, y))
 
-    event.MousePressed(event.MouseButtonLeft), NotPaused -> {
-      let on_pause_button =
-        model.mouse_pos.x <=. 30.0
-        && model.mouse_pos.y >=. { values.height -. 30.0 }
+    event.MousePressed(event.MouseButtonLeft), _ -> {
+      let press_region =
+        model.press_regions
+        |> list.find(fn(region) {
+          model.mouse_pos.x >=. region.x
+          && model.mouse_pos.x <. region.x +. region.width
+          && model.mouse_pos.y >=. region.y
+          && model.mouse_pos.y <. region.y +. region.height
+        })
 
-      case on_pause_button {
-        True -> change_paused(model, Paused)
-        False -> Model(..model, drag: Dragging(start_pos: model.mouse_pos))
+      case press_region {
+        Ok(region) -> region.on_press(model)
+
+        Error(_) -> {
+          // If there are no regions, we just do the default action.
+          case model.paused {
+            Paused -> change_paused(model, NotPaused)
+            NotPaused ->
+              Model(..model, drag: Dragging(start_pos: model.mouse_pos))
+          }
+        }
       }
     }
-
-    event.MousePressed(event.MouseButtonLeft), Paused ->
-      change_paused(model, NotPaused)
 
     event.MouseReleased(event.MouseButtonLeft), NotPaused ->
       Model(..model, drag: NoDrag)
@@ -438,6 +463,21 @@ fn view_pause_button(
   ])
 }
 
+fn pause_press_region() -> PressRegion {
+  PressRegion(
+    x: 0.0,
+    y: values.height -. 30.0,
+    width: 30.0,
+    height: 30.0,
+    on_press: fn(model) {
+      case model.paused {
+        NotPaused -> change_paused(model, Paused)
+        Paused -> model
+      }
+    },
+  )
+}
+
 const button_width = 60.0
 
 const button_height = 20.0
@@ -448,6 +488,18 @@ fn view_links(current_time: Float, consts: Consts) -> Picture {
     values.width -. button_width -. 2.0,
     values.height -. button_height -. 2.0,
   )
+}
+
+fn links_press_regions() -> List(PressRegion) {
+  [
+    PressRegion(
+      x: values.width -. button_width -. 2.0,
+      y: values.height -. button_height -. 2.0,
+      width: button_width,
+      height: button_height,
+      on_press: fn(model) { model },
+    ),
+  ]
 }
 
 fn view_button(label: String, current_time, consts: Consts) -> Picture {
