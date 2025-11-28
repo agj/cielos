@@ -7,6 +7,7 @@ import gleam/result
 import gleam/string
 import gleam_community/colour.{type Colour}
 import gleam_community/maths
+import js
 import paint.{type Picture} as p
 import paint/canvas
 import paint/event
@@ -497,7 +498,10 @@ fn links_press_regions() -> List(PressRegion) {
       y: values.height -. button_height -. 2.0,
       width: button_width,
       height: button_height,
-      on_press: fn(model) { model },
+      on_press: fn(model) {
+        js.open_url_in_new_tab("https://github.com/agj/cielos")
+        model
+      },
     ),
   ]
 }
