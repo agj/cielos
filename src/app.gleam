@@ -470,12 +470,7 @@ fn pause_press_region() -> PressRegion {
     y: values.height -. 30.0,
     width: 30.0,
     height: 30.0,
-    on_press: fn(model) {
-      case model.paused {
-        NotPaused -> change_paused(model, Paused)
-        Paused -> model
-      }
-    },
+    on_press: fn(model) { change_paused(model, flip_paused(model.paused)) },
   )
 }
 
