@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/order
 import gleam/result
 import gleam/string
@@ -108,7 +109,7 @@ type Object {
 
 type ObjectKind {
   StarObject
-  CollectedStarObject
+  CollectedStarObject(collected_time: Float)
 }
 
 type Camera {
@@ -202,7 +203,11 @@ fn check_collisions(model: Model) -> Model {
         { object.kind == StarObject }
         && { vec2f.distance(model.avatar.pos, object.pos) <. 0.8 }
       {
-        True -> Object(..object, kind: CollectedStarObject)
+        True ->
+          Object(
+            ..object,
+            kind: CollectedStarObject(collected_time: model.current_time),
+          )
         False -> object
       }
     })
@@ -503,26 +508,57 @@ fn get_picture_for_object(
   far: Bool,
   consts: Consts,
 ) -> Picture {
-  case object_kind, far {
-    StarObject, False -> view_star(current_time, consts, collected: False)
-    StarObject, True -> view_star_far(consts, collected: False)
-    CollectedStarObject, False ->
-      view_star(current_time, consts, collected: True)
-    CollectedStarObject, True -> view_star_far(consts, collected: True)
+  case far, object_kind {
+    False, StarObject -> view_star(current_time, consts, collected_time: None)
+    False, CollectedStarObject(collected_time:) ->
+      view_star(current_time, consts, collected_time: Some(collected_time))
+
+    True, StarObject -> view_star_far(consts, collected: False)
+    True, CollectedStarObject(_) -> view_star_far(consts, collected: True)
   }
 }
 
 fn view_star(
   current_time: Float,
   consts: Consts,
-  collected collected: Bool,
+  collected_time collected_time: Option(Float),
 ) -> Picture {
-  let fill_color = case collected {
-    True -> consts.color_white
-    False -> consts.color_yellow
-  }
   let rotation = current_time /. 2000.0
 
+  case collected_time {
+    None ->
+      view_star_picture(
+        fill_color: consts.color_yellow,
+        stroke_color: consts.color_orange,
+        rotation:,
+      )
+
+    Some(time) -> {
+      let star =
+        view_star_picture(
+          fill_color: consts.color_white,
+          stroke_color: consts.color_yellow,
+          rotation:,
+        )
+
+      let explosion = case current_time -. time {
+        t if t <=. 1000.0 ->
+          p.circle(1000.0)
+          |> p.fill(consts.color_white)
+          |> p.stroke_none
+        _ -> p.blank()
+      }
+
+      p.combine([star, explosion])
+    }
+  }
+}
+
+fn view_star_picture(
+  fill_color fill_color: Colour,
+  stroke_color stroke_color: Colour,
+  rotation rotation: Float,
+) -> Picture {
   p.polygon(
     list.range(0, 10)
     |> list.map(fn(i) {
@@ -536,7 +572,7 @@ fn view_star(
     }),
   )
   |> p.fill(fill_color)
-  |> p.stroke(consts.color_orange, 10.0)
+  |> p.stroke(stroke_color, 10.0)
 }
 
 fn view_star_far(consts: Consts, collected collected: Bool) -> Picture {
