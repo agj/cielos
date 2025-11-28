@@ -339,6 +339,7 @@ fn view_ui(model: Model) -> Picture {
             |> p.translate_xy(0.0, 80.0),
           view_instructions(model.current_time, model.consts)
             |> p.translate_xy(0.0, 200.0),
+          view_links(model.current_time, model.consts),
         ])
       NotPaused -> p.blank()
     },
@@ -436,6 +437,35 @@ fn view_pause_button(
         |> p.translate_xy(-6.0, -6.0)
     },
   ])
+}
+
+const button_width = 60.0
+
+const button_height = 20.0
+
+fn view_links(current_time: Float, consts: Consts) -> Picture {
+  view_button("about", current_time, consts)
+  |> p.translate_xy(
+    values.width -. button_width -. 2.0,
+    values.height -. button_height -. 2.0,
+  )
+}
+
+fn view_button(label: String, current_time, consts: Consts) -> Picture {
+  let text_scale = 0.5
+  let text_width = text.calc_text_width(label, text_scale)
+
+  p.combine([
+    p.rectangle(button_width, 20.0),
+    text.view_wobbly_text(label, current_time, consts.color_dark_blue)
+      |> p.scale_uniform(text_scale)
+      |> p.translate_xy(
+        { button_width *. 0.5 } -. { text_width *. 0.5 },
+        { button_height *. 0.5 } -. { values.char_width *. text_scale *. 0.5 },
+      ),
+  ])
+  |> p.fill(consts.color_white_transparent)
+  |> p.stroke_none
 }
 
 // VIEW OBJECT

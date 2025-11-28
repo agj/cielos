@@ -248,6 +248,15 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
         ]),
       ])
 
+    "u" ->
+      p.lines([
+        // Top-right.
+        #(11.0, 0.0),
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        #(1.0, 0.0),
+      ])
+
     "v" ->
       p.lines([
         // Top-right.
