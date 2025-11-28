@@ -11,6 +11,8 @@ import gleam_community/maths
 import paint.{type Picture} as p
 import paint/canvas
 import paint/event
+import text
+import values
 import vec/vec2.{type Vec2, Vec2}
 import vec/vec2f
 
@@ -61,27 +63,6 @@ fn init(_config: canvas.Config) -> Model {
     ),
   )
 }
-
-// CONSTANTS
-
-const width = 300.0
-
-const height = 300.0
-
-const center = Vec2(150.0, 150.0)
-
-const min_speed = 0.005
-
-const max_speed = 0.4
-
-const rotation_speed = 0.09
-
-// tau / 8
-const half_visible_angle = 0.7853981634
-
-const char_width = 12.0
-
-const char_spacing = 3.0
 
 // MODEL
 
@@ -176,7 +157,8 @@ fn update(model: Model, event: event.Event) -> Model {
 
     event.MousePressed(event.MouseButtonLeft), NotPaused -> {
       let on_pause_button =
-        model.mouse_pos.x <=. 30.0 && model.mouse_pos.y >=. { height -. 30.0 }
+        model.mouse_pos.x <=. 30.0
+        && model.mouse_pos.y >=. { values.height -. 30.0 }
 
       case on_pause_button {
         True -> change_paused(model, Paused)
@@ -288,14 +270,14 @@ fn change_speed(model: Model, direction: Float) -> Model {
     ..model,
     speed: float.clamp(
       model.speed +. { direction *. { model.speed *. 0.05 } },
-      min: min_speed,
-      max: max_speed,
+      min: values.min_speed,
+      max: values.max_speed,
     ),
   )
 }
 
 fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
-  Vector(..avatar, dir: avatar.dir +. { rotation_speed *. direction })
+  Vector(..avatar, dir: avatar.dir +. { values.rotation_speed *. direction })
 }
 
 // VIEW
@@ -319,7 +301,7 @@ fn view(model: Model) -> Picture {
           float.absolute_value(vec2f.distance(camera.pos, object.pos))
         let in_field_of_view =
           float.absolute_value(horizontal_angle_from_camera_center)
-          <=. half_visible_angle
+          <=. values.half_visible_angle
 
         case in_field_of_view {
           True ->
@@ -343,7 +325,7 @@ fn view(model: Model) -> Picture {
       }),
     )
     // Center.
-    |> p.translate_xy(center.x, center.y)
+    |> p.translate_xy(values.center.x, values.center.y)
 
   p.combine([model.consts.background_picture, content, view_ui(model)])
 }
@@ -361,14 +343,18 @@ fn view_ui(model: Model) -> Picture {
       NotPaused -> p.blank()
     },
     view_pause_button(model.paused, model.current_time, model.consts)
-      |> p.translate_xy(17.0, height -. 17.0),
+      |> p.translate_xy(17.0, values.height -. 17.0),
   ])
 }
 
 fn calc_text_width(text: String, scale: Float) -> Float {
   let length = int.to_float(string.length(text))
 
-  { { { char_width +. char_spacing } *. length } -. char_spacing } *. scale
+  {
+    { { values.char_width +. values.char_spacing } *. length }
+    -. values.char_spacing
+  }
+  *. scale
 }
 
 /// Rendered already centered horizontally on the screen, though vertically it's
@@ -382,13 +368,21 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
   let bottom_text_width = calc_text_width(bottom_text, bottom_text_scale)
 
   p.combine([
-    view_wobbly_text(top_text, current_time:, color: consts.color_dark_blue)
+    text.view_wobbly_text(
+      top_text,
+      current_time:,
+      color: consts.color_dark_blue,
+    )
       |> p.scale_uniform(top_text_scale),
-    view_wobbly_text(bottom_text, current_time:, color: consts.color_dark_blue)
+    text.view_wobbly_text(
+      bottom_text,
+      current_time:,
+      color: consts.color_dark_blue,
+    )
       |> p.scale_uniform(bottom_text_scale)
       |> p.translate_xy({ top_text_width } -. { bottom_text_width }, 40.0),
   ])
-  |> p.translate_x({ width *. 0.5 } -. { top_text_width *. 0.5 })
+  |> p.translate_x({ values.width *. 0.5 } -. { top_text_width *. 0.5 })
 }
 
 /// Rendered already centered horizontally on the screen, though vertically it's
@@ -408,12 +402,12 @@ fn view_instructions(current_time: Float, consts: Consts) -> Picture {
   p.combine(
     texts
     |> list.index_map(fn(text, i) {
-      view_wobbly_text(text, current_time:, color: consts.color_dark_blue)
-      |> p.translate_y(char_width *. 2.5 *. int.to_float(i))
+      text.view_wobbly_text(text, current_time:, color: consts.color_dark_blue)
+      |> p.translate_y(values.char_width *. 2.5 *. int.to_float(i))
     }),
   )
   |> p.scale_uniform(scale)
-  |> p.translate_x({ width *. 0.5 } -. { max_width *. 0.5 })
+  |> p.translate_x({ values.width *. 0.5 } -. { max_width *. 0.5 })
 }
 
 fn view_pause_button(
@@ -430,7 +424,7 @@ fn view_pause_button(
         let label_text = "esc"
         let label_scale = 0.5
         let label =
-          view_wobbly_text(
+          text.view_wobbly_text(
             label_text,
             current_time,
             consts.color_white_transparent,
@@ -471,8 +465,8 @@ fn view_object(
   }
   let translation =
     Vec2(
-      angle_hor *. center.x /. half_visible_angle,
-      float.negate(angle_ver *. center.x /. half_visible_angle),
+      angle_hor *. values.center.x /. values.half_visible_angle,
+      float.negate(angle_ver *. values.center.x /. values.half_visible_angle),
     )
 
   let object_picture =
@@ -490,7 +484,9 @@ fn view_object(
       let shadow_translation =
         Vec2(
           translation.x,
-          float.negate(shadow_angle_ver *. center.x /. half_visible_angle),
+          float.negate(
+            shadow_angle_ver *. values.center.x /. values.half_visible_angle,
+          ),
         )
 
       consts.shadow_picture
@@ -600,8 +596,8 @@ fn view_background() -> Picture {
       to_s: 0.4,
       from_l: 0.9,
       to_l: 0.98,
-      width:,
-      height: height /. 2.0,
+      width: values.width,
+      height: values.height /. 2.0,
       steps: 50,
     ),
     view_gradient(
@@ -611,11 +607,11 @@ fn view_background() -> Picture {
       to_s: 0.7,
       from_l: 0.95,
       to_l: 0.8,
-      width:,
-      height: height /. 2.0,
+      width: values.width,
+      height: values.height /. 2.0,
       steps: 50,
     )
-      |> p.translate_y(center.y),
+      |> p.translate_y(values.center.y),
   ]
   |> p.combine
 }
@@ -678,304 +674,6 @@ fn view_icon_play(color: Colour) -> Picture {
   ])
   |> p.fill(color)
   |> p.stroke_none
-}
-
-// VIEW TEXT
-
-fn view_wobbly_text(
-  text: String,
-  current_time current_time: Float,
-  color color: Colour,
-) -> Picture {
-  string.split(text, on: "")
-  |> list.index_map(fn(char, i) {
-    view_wobbly_letter(
-      char,
-      current_time: current_time +. { int.to_float(i) *. 8000.0 },
-      color:,
-    )
-    |> p.translate_x(int.to_float(i) *. { char_width +. char_spacing })
-  })
-  |> p.combine
-}
-
-fn view_wobbly_letter(
-  letter: String,
-  current_time current_time: Float,
-  color color: Colour,
-) -> Picture {
-  let rotation = maths.sin(current_time /. 400.0) *. 0.1
-  let y_translation = maths.sin(current_time /. 1600.0) *. 6.0
-
-  view_letter(letter, color)
-  |> p.fill(color)
-  |> p.stroke_none
-  |> p.translate_xy(-6.0, -6.0)
-  |> p.rotate(p.angle_rad(rotation))
-  |> p.translate_xy(6.0, 6.0 +. y_translation)
-}
-
-/// Letter drawn on a 12×12 grid (some features pop out from the top and
-/// bottom), with origin on the top-left.
-fn view_letter(letter: String, color: Colour) -> Picture {
-  // In most cases, stroke follows a clockwise motion.
-  case letter {
-    "a" ->
-      p.lines([
-        // Top-left.
-        #(3.0, 1.0),
-        #(11.0, 1.0),
-        // Bottom-right.
-        #(11.0, 11.0),
-        #(1.0, 11.0),
-        // Mid-left.
-        #(1.0, 5.0),
-        #(11.0, 5.0),
-      ])
-
-    "b" ->
-      p.lines([
-        // Top-left, going right.
-        #(1.0, 3.0),
-        #(11.0, 3.0),
-        // Bottom-left.
-        #(11.0, 11.0),
-        #(1.0, 11.0),
-        #(1.0, -1.0),
-      ])
-
-    "c" ->
-      p.lines([
-        // Bottom-right.
-        #(11.0, 11.0),
-        #(1.0, 11.0),
-        // Top-left.
-        #(1.0, 1.0),
-        #(11.0, 1.0),
-        #(11.0, 3.0),
-      ])
-
-    "d" ->
-      view_letter("b", color)
-      |> p.scale_x(-1.0)
-      |> p.translate_x(12.0)
-
-    "e" ->
-      p.lines([
-        // Bottom-right.
-        #(9.0, 11.0),
-        #(1.0, 11.0),
-        // Top-left.
-        #(1.0, 1.0),
-        #(11.0, 1.0),
-        // Mid-right.
-        #(11.0, 7.0),
-        #(1.0, 7.0),
-      ])
-
-    "g" ->
-      p.combine([
-        // Top.
-        p.lines([
-          // Top-left.
-          #(0.0, 1.0),
-          #(10.0, 1.0),
-          // Mid-right.
-          #(10.0, 7.0),
-          #(1.0, 7.0),
-          #(1.0, 1.0),
-        ]),
-        // Bottom.
-        p.lines([
-          // Mid-left.
-          #(3.0, 7.0),
-          #(3.0, 11.0),
-          #(11.0, 11.0),
-          #(11.0, 13.0),
-        ]),
-      ])
-
-    "i" ->
-      p.combine([
-        // Dot.
-        p.lines([
-          #(6.0, -2.0),
-          #(6.0, 0.0),
-        ]),
-        // Stem.
-        p.lines([
-          // Top-left.
-          #(2.0, 3.0),
-          #(6.0, 3.0),
-          #(6.0, 11.0),
-        ]),
-        // Bottom serif.
-        p.lines([
-          #(0.0, 11.0),
-          #(12.0, 11.0),
-        ]),
-      ])
-
-    "j" ->
-      p.combine([
-        // Dot.
-        p.lines([
-          #(11.0, -2.0),
-          #(11.0, 0.0),
-        ]),
-        // Body.
-        p.lines([
-          // Top-right.
-          #(11.0, 2.0),
-          #(11.0, 11.0),
-          #(1.0, 11.0),
-          #(1.0, 9.0),
-        ]),
-      ])
-
-    "l" ->
-      p.lines([
-        // Bottom-right.
-        #(12.0, 11.0),
-        #(1.0, 11.0),
-        #(1.0, 0.0),
-      ])
-
-    "m" ->
-      p.combine([
-        // Half-square going around.
-        p.lines([
-          // Bottom-left.
-          #(1.0, 12.0),
-          #(1.0, 1.0),
-          // Top-right.
-          #(11.0, 1.0),
-          #(11.0, 12.0),
-        ]),
-        // Middle stroke.
-        p.lines([
-          #(6.0, 1.0),
-          #(6.0, 12.0),
-        ]),
-      ])
-
-    "n" ->
-      p.lines([
-        // Bottom-left.
-        #(1.0, 12.0),
-        #(1.0, 1.0),
-        // Top-right.
-        #(9.0, 1.0),
-        #(9.0, 3.0),
-        #(11.0, 3.0),
-        #(11.0, 12.0),
-      ])
-
-    "o" ->
-      p.lines([
-        // Top-left, going right.
-        #(0.0, 1.0),
-        #(11.0, 1.0),
-        #(11.0, 11.0),
-        #(1.0, 11.0),
-        #(1.0, 1.0),
-      ])
-
-    "r" ->
-      p.lines([
-        // Bottom-left.
-        #(1.0, 12.0),
-        #(1.0, 1.0),
-        #(11.0, 1.0),
-        #(11.0, 3.0),
-      ])
-
-    "s" ->
-      p.lines([
-        // Top-right.
-        #(11.0, 1.0),
-        #(2.0, 1.0),
-        // Mid-left.
-        #(2.0, 6.0),
-        #(11.0, 6.0),
-        // Bottom-right.
-        #(11.0, 11.0),
-        #(1.0, 11.0),
-        #(1.0, 9.0),
-      ])
-
-    "t" ->
-      p.combine([
-        // Cross-stroke.
-        p.lines([
-          #(0.0, 2.0),
-          #(12.0, 2.0),
-        ]),
-        // Stem.
-        p.lines([
-          // Top-left.
-          #(5.0, -1.0),
-          #(5.0, 11.0),
-          #(12.0, 11.0),
-        ]),
-      ])
-
-    "v" ->
-      p.lines([
-        // Top-right.
-        #(11.0, 0.0),
-        #(11.0, 11.0),
-        // Bottom-left (entering corner).
-        #(4.0, 11.0),
-        #(1.0, 8.0),
-        #(1.0, 0.0),
-      ])
-
-    "y" ->
-      p.combine([
-        // Right stroke.
-        p.lines([
-          // Top-right.
-          #(11.0, 0.0),
-          #(11.0, 13.0),
-          #(1.0, 13.0),
-        ]),
-        // Left stroke.
-        p.lines([
-          // Mid-right.
-          #(11.0, 9.0),
-          #(1.0, 9.0),
-          #(1.0, 0.0),
-        ]),
-      ])
-
-    "←" ->
-      p.combine([
-        // Angle.
-        p.lines([
-          // Bottom-mid.
-          #(6.0, 11.0),
-          #(5.0, 11.0),
-          #(1.0, 7.0),
-          #(1.0, 5.0),
-          #(5.0, 1.0),
-          #(6.0, 1.0),
-        ]),
-        // Middle stroke.
-        p.lines([
-          #(1.0, 6.0),
-          #(12.0, 6.0),
-        ]),
-      ])
-
-    "→" ->
-      view_letter("←", color)
-      |> p.rotate(p.angle_rad(maths.pi()))
-      |> p.translate_xy(12.0, 12.0)
-
-    _ -> p.blank()
-  }
-  |> p.stroke(color, 2.0)
 }
 
 // UTILS
