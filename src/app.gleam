@@ -347,25 +347,15 @@ fn view_ui(model: Model) -> Picture {
   ])
 }
 
-fn calc_text_width(text: String, scale: Float) -> Float {
-  let length = int.to_float(string.length(text))
-
-  {
-    { { values.char_width +. values.char_spacing } *. length }
-    -. values.char_spacing
-  }
-  *. scale
-}
-
 /// Rendered already centered horizontally on the screen, though vertically it's
 /// at 0.
 fn view_title(current_time: Float, consts: Consts) -> Picture {
   let top_text = "cielos"
   let top_text_scale = 1.5
-  let top_text_width = calc_text_width(top_text, top_text_scale)
+  let top_text_width = text.calc_text_width(top_text, top_text_scale)
   let bottom_text = "by agj"
   let bottom_text_scale = 0.75
-  let bottom_text_width = calc_text_width(bottom_text, bottom_text_scale)
+  let bottom_text_width = text.calc_text_width(bottom_text, bottom_text_scale)
 
   p.combine([
     text.view_wobbly_text(
@@ -396,7 +386,7 @@ fn view_instructions(current_time: Float, consts: Consts) -> Picture {
       order.negate(int.compare(string.length(a), string.length(b)))
     })
     |> list.first
-    |> result.map(calc_text_width(_, scale))
+    |> result.map(text.calc_text_width(_, scale))
     |> result.unwrap(0.0)
 
   p.combine(
@@ -436,7 +426,7 @@ fn view_pause_button(
             |> p.translate_xy(-6.0, -6.0),
           label
             |> p.translate_xy(
-              calc_text_width(label_text, label_scale) *. -0.5,
+              text.calc_text_width(label_text, label_scale) *. -0.5,
               -27.0,
             ),
         ])

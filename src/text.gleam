@@ -305,3 +305,13 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
   }
   |> p.stroke(color, 2.0)
 }
+
+pub fn calc_text_width(text: String, scale: Float) -> Float {
+  let length = int.to_float(string.length(text))
+
+  {
+    { { values.char_width +. values.char_spacing } *. length }
+    -. values.char_spacing
+  }
+  *. scale
+}
