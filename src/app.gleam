@@ -527,30 +527,26 @@ fn view_star(
 
   case collected_time {
     None ->
+      // Non-collected star.
       view_star_picture(
         fill_color: consts.color_yellow,
         stroke_color: consts.color_orange,
         rotation:,
       )
 
-    Some(time) -> {
-      let star =
-        view_star_picture(
-          fill_color: consts.color_white,
-          stroke_color: consts.color_yellow,
-          rotation:,
-        )
+    Some(time) if current_time -. time <=. 1000.0 ->
+      // Explosion when collecting.
+      p.circle(1000.0)
+      |> p.fill(consts.color_white)
+      |> p.stroke_none
 
-      let explosion = case current_time -. time {
-        t if t <=. 1000.0 ->
-          p.circle(1000.0)
-          |> p.fill(consts.color_white)
-          |> p.stroke_none
-        _ -> p.blank()
-      }
-
-      p.combine([star, explosion])
-    }
+    Some(_) ->
+      // Collected star.
+      view_star_picture(
+        fill_color: consts.color_white,
+        stroke_color: consts.color_yellow,
+        rotation:,
+      )
   }
 }
 
