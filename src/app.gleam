@@ -48,6 +48,7 @@ fn init(_config: canvas.Config) -> Model {
     speed: 0.01,
     objects:,
     mouse: Mouse(pos: Vec2(0.0, 0.0), prev_pos: Vec2(0.0, 0.0)),
+    keyboard: Keyboard(left: False, right: False),
     drag: NoDrag,
     current_time: 0.0,
     prev_tick_time: 0.0,
@@ -78,6 +79,7 @@ type Model {
     speed: Float,
     objects: List(Object),
     mouse: Mouse,
+    keyboard: Keyboard,
     drag: Drag,
     current_time: Float,
     prev_tick_time: Float,
@@ -106,6 +108,10 @@ type Camera {
 
 type Mouse {
   Mouse(pos: Vec2(Float), prev_pos: Vec2(Float))
+}
+
+type Keyboard {
+  Keyboard(left: Bool, right: Bool)
 }
 
 type Drag {
@@ -157,16 +163,22 @@ fn update(model: Model, event: event.Event) -> Model {
         prev_tick_time: model.current_time,
       )
       |> move_avatar
-      |> change_rotation_by_drag_or_flick
+      |> change_rotation_by_input
       |> check_collisions
     }
 
     // Keyboard.
     event.KeyboardPressed(event.KeyLeftArrow), NotPaused ->
-      change_rotation(model, -1.0)
+      Model(..model, keyboard: Keyboard(..model.keyboard, left: True))
+
+    event.KeyboardRelased(event.KeyLeftArrow), NotPaused ->
+      Model(..model, keyboard: Keyboard(..model.keyboard, left: False))
 
     event.KeyboardPressed(event.KeyRightArrow), NotPaused ->
-      change_rotation(model, 1.0)
+      Model(..model, keyboard: Keyboard(..model.keyboard, right: True))
+
+    event.KeyboardRelased(event.KeyRightArrow), NotPaused ->
+      Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
     event.KeyboardPressed(event.KeyUpArrow), NotPaused ->
       change_speed(model, 1.0)
@@ -266,10 +278,15 @@ fn move_avatar(model: Model) -> Model {
   )
 }
 
+/// Changes avatar rotation by an amount, the canonical being `1.0` or `-1.0`,
+/// which is adjusted by time elapsed in last frame.
 fn change_rotation(model: Model, amount: Float) -> Model {
+  let delta_time = model.current_time -. model.prev_tick_time
+  let amount_by_time = amount *. delta_time
+
   Model(
     ..model,
-    avatar: rotate_avatar(model.avatar, amount),
+    avatar: rotate_avatar(model.avatar, amount_by_time),
     camera: Camera(
       start_move_time: model.current_time,
       lagging_dir: get_camera_dir(
@@ -281,11 +298,15 @@ fn change_rotation(model: Model, amount: Float) -> Model {
   )
 }
 
-fn change_rotation_by_drag_or_flick(model: Model) -> Model {
-  case model.drag {
-    NoDrag -> model
+fn change_rotation_by_input(model: Model) -> Model {
+  case model.keyboard, model.drag {
+    Keyboard(left: True, right: False), _ -> change_rotation(model, -1.0)
 
-    Dragging(start_pos:, start_avatar_dir:) -> {
+    Keyboard(left: False, right: True), _ -> change_rotation(model, 1.0)
+
+    _, NoDrag -> model
+
+    _, Dragging(start_pos:, start_avatar_dir:) -> {
       let angle_diff = pixels_to_angle(model.mouse.pos.x -. start_pos.x)
 
       Model(
@@ -294,7 +315,7 @@ fn change_rotation_by_drag_or_flick(model: Model) -> Model {
       )
     }
 
-    Flicked(force:, released_time:) -> {
+    _, Flicked(force:, released_time:) -> {
       let time_since_flick = model.current_time -. released_time
       let inertial_movement_progress =
         float.min(1.0, time_since_flick /. values.flick_inertia_duration_ms)
@@ -349,8 +370,10 @@ fn change_speed(model: Model, direction: Float) -> Model {
   )
 }
 
-fn rotate_avatar(avatar: Vector, direction: Float) -> Vector {
-  Vector(..avatar, dir: avatar.dir +. { values.rotation_speed *. direction })
+/// Rotates avatar's direction by an amount, which is scaled according to
+/// `values.rotation_speed`.
+fn rotate_avatar(avatar: Vector, amount: Float) -> Vector {
+  Vector(..avatar, dir: avatar.dir +. { values.rotation_speed *. amount })
 }
 
 // VIEW

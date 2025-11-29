@@ -10,7 +10,7 @@ pub const min_speed = 0.005
 
 pub const max_speed = 0.4
 
-pub const rotation_speed = 0.09
+pub const rotation_speed = 0.001
 
 // tau / 8
 pub const half_visible_angle = 0.7853981634
