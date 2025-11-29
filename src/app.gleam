@@ -427,11 +427,11 @@ fn view_screen_effects(model: Model) -> Picture {
       }
     })
   let last_time_star_collected =
-    list.fold(collected_star_collection_times, from: -1000.0, with: float.max)
+    list.fold(collected_star_collection_times, from: -10_000.0, with: float.max)
   let time_since_last_star_collected =
     model.current_time -. last_time_star_collected
-  let collect_flash_duration = 300.0
-  let flash_progress = time_since_last_star_collected /. collect_flash_duration
+  let flash_progress =
+    time_since_last_star_collected /. values.collect_star_flash_duration_ms
 
   case flash_progress <. 1.0 {
     False -> p.blank()
@@ -439,10 +439,20 @@ fn view_screen_effects(model: Model) -> Picture {
     True -> {
       let assert Ok(color) =
         colour.from_hsla(0.0, 0.0, 1.0, 1.0 -. flash_progress)
+      let collected_star_count = list.length(collected_star_collection_times)
 
-      p.rectangle(values.width, values.height)
-      |> p.fill(color)
-      |> p.stroke_none
+      p.combine([
+        p.rectangle(values.width, values.height)
+          |> p.fill(color)
+          |> p.stroke_none,
+        text.view_wobbly_text(
+          int.to_string(collected_star_count),
+          model.current_time,
+          model.consts.color_dark_blue,
+        )
+          |> p.scale_uniform(2.0)
+          |> p.translate_xy(20.0, 30.0),
+      ])
     }
   }
 }

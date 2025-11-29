@@ -20,3 +20,5 @@ pub const char_width = 12.0
 pub const char_spacing = 3.0
 
 pub const flick_inertia_duration_ms = 2000.0
+
+pub const collect_star_flash_duration_ms = 300.0
