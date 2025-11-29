@@ -516,7 +516,7 @@ fn view_instructions(
   consts consts: Consts,
 ) -> Picture {
   let texts = [
-    "←→ drag or keys to turn",
+    "drag or keys ←→ to turn",
     "collect " <> int.to_string(n_remaining_stars) <> " stars",
   ]
   let scale = 0.75
