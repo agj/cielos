@@ -101,6 +101,22 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
         #(1.0, 7.0),
       ])
 
+    "f" ->
+      p.combine([
+        // Cross-stroke.
+        p.lines([
+          #(0.0, 5.0),
+          #(11.0, 5.0),
+        ]),
+        // Stem.
+        p.lines([
+          // Bottom.
+          #(5.0, 12.0),
+          #(5.0, -1.0),
+          #(12.0, -1.0),
+        ]),
+      ])
+
     "g" ->
       p.combine([
         // Top.
@@ -158,6 +174,29 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
           #(11.0, 11.0),
           #(1.0, 11.0),
           #(1.0, 9.0),
+        ]),
+      ])
+
+    "k" ->
+      p.combine([
+        // Stem.
+        p.lines([
+          #(1.0, 0.0),
+          #(1.0, 12.0),
+        ]),
+        // Low knee.
+        p.lines([
+          // Mid-left.
+          #(1.0, 6.0),
+          #(11.0, 6.0),
+          #(11.0, 12.0),
+        ]),
+        // High shoulder.
+        p.lines([
+          #(11.0, 0.0),
+          #(11.0, 1.0),
+          #(6.0, 6.0),
+          #(5.0, 6.0),
         ]),
       ])
 

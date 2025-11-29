@@ -442,7 +442,7 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
 /// Rendered already centered horizontally on the screen, though vertically it's
 /// at 0.
 fn view_instructions(current_time: Float, consts: Consts) -> Picture {
-  let texts = ["move ←→", "collect stars"]
+  let texts = ["flick ←→ to turn", "collect stars"]
   let scale = 0.75
   let max_width =
     texts
