@@ -6,6 +6,15 @@ import gleam_community/maths
 import paint.{type Picture} as p
 import values
 
+pub fn view_wobbly_text_x_centered(
+  text: String,
+  current_time current_time: Float,
+  color color: Colour,
+) -> Picture {
+  view_wobbly_text(text, current_time:, color:)
+  |> p.translate_x(calc_text_width(text, 1.0) *. -0.5)
+}
+
 /// Renders text whose every letter softly oscillates and rotates.
 pub fn view_wobbly_text(
   text: String,

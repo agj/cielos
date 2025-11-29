@@ -17,10 +17,14 @@ import vec/vec2.{type Vec2, Vec2}
 import vec/vec2f
 
 pub fn main() {
-  canvas.interact(init, update, view, "#app")
+  canvas.interact(game_init, update, view, "#app")
 }
 
-fn init(_config: canvas.Config) -> Model {
+fn game_init(_config: canvas.Config) -> Model {
+  init()
+}
+
+fn init() -> Model {
   let dir = 0.8 *. maths.tau()
   let assert Ok(color_white_transparent) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
   let assert Ok(color_dark_blue) = colour.from_hsl(0.6, 0.7, 0.7)
@@ -118,6 +122,7 @@ type Drag {
 type PauseStatus {
   Paused
   NotPaused
+  GameWon
 }
 
 type PressRegion {
@@ -147,7 +152,7 @@ type Consts {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event, model.paused {
-    event.Tick(updated_time), Paused ->
+    event.Tick(updated_time), Paused | event.Tick(updated_time), GameWon ->
       Model(..model, current_time: updated_time, drag: NoDrag)
 
     event.Tick(updated_time), NotPaused -> {
@@ -195,6 +200,7 @@ fn update(model: Model, event: event.Event) -> Model {
         Error(_) -> {
           // If there are no regions, we just do the default action.
           case model.paused {
+            GameWon -> model
             Paused -> change_paused(model, NotPaused)
             NotPaused ->
               Model(
@@ -254,6 +260,7 @@ fn flip_paused(paused: PauseStatus) -> PauseStatus {
   case paused {
     Paused -> NotPaused
     NotPaused -> Paused
+    GameWon -> paused
   }
 }
 
@@ -460,23 +467,44 @@ fn view_screen_effects(model: Model) -> Picture {
 fn view_ui(model: Model) -> Picture {
   p.combine([
     case model.paused {
-      Paused ->
-        p.combine([
-          view_title(model.current_time, model.consts)
-            |> p.translate_xy(0.0, 80.0),
-          view_instructions(
-            current_time: model.current_time,
-            n_remaining_stars: count_objects(model.objects, StarObject),
-            consts: model.consts,
-          )
-            |> p.translate_xy(0.0, 200.0),
-          view_links(model.current_time, model.consts),
-        ])
-
+      Paused -> view_pause_screen(model)
       NotPaused -> p.blank()
+      GameWon -> view_victory_screen(model)
     },
     view_pause_button(model.paused, model.current_time, model.consts)
       |> p.translate_xy(17.0, values.height -. 17.0),
+  ])
+}
+
+fn view_victory_screen(model: Model) -> Picture {
+  p.combine([
+    text.view_wobbly_text_x_centered(
+      "congratulations",
+      model.current_time,
+      model.consts.color_dark_blue,
+    )
+      |> p.translate_xy(values.width *. 0.5, 70.0),
+    text.view_wobbly_text_x_centered(
+      "you collected all stars",
+      model.current_time,
+      model.consts.color_dark_blue,
+    )
+      |> p.scale_uniform(0.5)
+      |> p.translate_xy(values.width *. 0.5, 100.0),
+  ])
+}
+
+fn view_pause_screen(model: Model) -> Picture {
+  p.combine([
+    view_title(model.current_time, model.consts)
+      |> p.translate_xy(0.0, 80.0),
+    view_instructions(
+      current_time: model.current_time,
+      n_remaining_stars: count_objects(model.objects, StarObject),
+      consts: model.consts,
+    )
+      |> p.translate_xy(0.0, 200.0),
+    view_links(model.current_time, model.consts),
   ])
 }
 
@@ -550,7 +578,7 @@ fn view_pause_button(
       |> p.fill(consts.color_white_transparent)
       |> p.stroke_none,
     case paused {
-      Paused -> {
+      Paused | GameWon -> {
         let label_text = "esc"
         let label_scale = 0.5
         let label =
@@ -571,6 +599,7 @@ fn view_pause_button(
             ),
         ])
       }
+
       NotPaused ->
         view_icon_pause(consts.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
