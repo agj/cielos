@@ -45,7 +45,6 @@ fn init(_config: canvas.Config) -> Model {
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     rotation_force: 0.0,
-    speed: 0.01,
     objects:,
     mouse: Mouse(pos: Vec2(0.0, 0.0), prev_pos: Vec2(0.0, 0.0)),
     keyboard: Keyboard(left: False, right: False),
@@ -76,7 +75,6 @@ type Model {
   Model(
     avatar: Vector,
     rotation_force: Float,
-    speed: Float,
     objects: List(Object),
     mouse: Mouse,
     keyboard: Keyboard,
@@ -177,12 +175,6 @@ fn update(model: Model, event: event.Event) -> Model {
     event.KeyboardRelased(event.KeyRightArrow), _ ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
-    event.KeyboardPressed(event.KeyUpArrow), NotPaused ->
-      change_speed(model, 1.0)
-
-    event.KeyboardPressed(event.KeyDownArrow), NotPaused ->
-      change_speed(model, -1.0)
-
     event.KeyboardPressed(event.KeyEscape), _ ->
       change_paused(model, flip_paused(model.paused))
 
@@ -263,7 +255,7 @@ fn flip_paused(paused: PauseStatus) -> PauseStatus {
 
 fn move_avatar(model: Model) -> Model {
   let delta_time = model.current_time -. model.prev_tick_time
-  let r = model.speed *. delta_time
+  let r = values.speed *. delta_time
   let #(tx, ty) = maths.polar_to_cartesian(r, model.avatar.dir)
 
   Model(
@@ -371,17 +363,6 @@ fn set_flicking(model: Model) -> Model {
       }
     }
   }
-}
-
-fn change_speed(model: Model, direction: Float) -> Model {
-  Model(
-    ..model,
-    speed: float.clamp(
-      model.speed +. { direction *. { model.speed *. 0.05 } },
-      min: values.min_speed,
-      max: values.max_speed,
-    ),
-  )
 }
 
 // VIEW

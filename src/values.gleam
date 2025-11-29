@@ -6,9 +6,7 @@ pub const height = 300.0
 
 pub const center = Vec2(150.0, 150.0)
 
-pub const min_speed = 0.005
-
-pub const max_speed = 0.4
+pub const speed = 0.01
 
 pub const rotation_force_acceleration = 0.000005
 
