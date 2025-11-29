@@ -47,6 +47,7 @@ fn init() -> Model {
     })
 
   Model(
+    game_status: GamePaused,
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
     rotation_force: 0.0,
     objects:,
@@ -55,7 +56,6 @@ fn init() -> Model {
     drag: NoDrag,
     current_time: 0.0,
     prev_tick_time: 0.0,
-    paused: Paused,
     press_regions: list.flatten([
       [pause_press_region()],
       links_press_regions(),
@@ -77,6 +77,7 @@ fn init() -> Model {
 
 type Model {
   Model(
+    game_status: GameStatus,
     avatar: Vector,
     rotation_force: Float,
     objects: List(Object),
@@ -85,7 +86,6 @@ type Model {
     drag: Drag,
     current_time: Float,
     prev_tick_time: Float,
-    paused: PauseStatus,
     press_regions: List(PressRegion),
     consts: Consts,
   )
@@ -119,9 +119,9 @@ type Drag {
   Flicked(force: Float, released_time: Float)
 }
 
-type PauseStatus {
-  Paused
-  NotPaused
+type GameStatus {
+  GamePlaying
+  GamePaused
   GameWon
 }
 
@@ -151,11 +151,11 @@ type Consts {
 // UPDATE
 
 fn update(model: Model, event: event.Event) -> Model {
-  case event, model.paused {
-    event.Tick(updated_time), Paused | event.Tick(updated_time), GameWon ->
+  case event, model.game_status {
+    event.Tick(updated_time), GamePaused | event.Tick(updated_time), GameWon ->
       Model(..model, current_time: updated_time, drag: NoDrag)
 
-    event.Tick(updated_time), NotPaused -> {
+    event.Tick(updated_time), GamePlaying -> {
       Model(
         ..model,
         current_time: updated_time,
@@ -168,10 +168,10 @@ fn update(model: Model, event: event.Event) -> Model {
     }
 
     // Keyboard.
-    event.KeyboardPressed(event.KeyLeftArrow), NotPaused ->
+    event.KeyboardPressed(event.KeyLeftArrow), GamePlaying ->
       Model(..model, keyboard: Keyboard(..model.keyboard, left: True))
 
-    event.KeyboardPressed(event.KeyRightArrow), NotPaused ->
+    event.KeyboardPressed(event.KeyRightArrow), GamePlaying ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: True))
 
     event.KeyboardRelased(event.KeyLeftArrow), _ ->
@@ -181,7 +181,7 @@ fn update(model: Model, event: event.Event) -> Model {
       Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
     event.KeyboardPressed(event.KeyEscape), _ ->
-      change_paused(model, flip_paused(model.paused))
+      change_game_status(model, flip_paused(model.game_status))
 
     // Mouse.
     event.MousePressed(event.MouseButtonLeft), _ -> {
@@ -199,10 +199,10 @@ fn update(model: Model, event: event.Event) -> Model {
 
         Error(_) -> {
           // If there are no regions, we just do the default action.
-          case model.paused {
+          case model.game_status {
             GameWon -> model
-            Paused -> change_paused(model, NotPaused)
-            NotPaused ->
+            GamePaused -> change_game_status(model, GamePlaying)
+            GamePlaying ->
               Model(
                 ..model,
                 drag: Dragging(
@@ -221,7 +221,8 @@ fn update(model: Model, event: event.Event) -> Model {
     event.MouseMoved(x, y), _ ->
       Model(..model, mouse: Mouse(pos: Vec2(x, y), prev_pos: model.mouse.pos))
 
-    event.MouseReleased(event.MouseButtonLeft), NotPaused -> set_flicking(model)
+    event.MouseReleased(event.MouseButtonLeft), GamePlaying ->
+      set_flicking(model)
 
     // Ignore other events.
     _, _ -> model
@@ -252,15 +253,15 @@ fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
   list.count(objects, where: fn(object) { object.kind == kind })
 }
 
-fn change_paused(model: Model, new_paused: PauseStatus) -> Model {
-  Model(..model, paused: new_paused, drag: NoDrag)
+fn change_game_status(model: Model, new_status: GameStatus) -> Model {
+  Model(..model, game_status: new_status, drag: NoDrag)
 }
 
-fn flip_paused(paused: PauseStatus) -> PauseStatus {
-  case paused {
-    Paused -> NotPaused
-    NotPaused -> Paused
-    GameWon -> paused
+fn flip_paused(game_status: GameStatus) -> GameStatus {
+  case game_status {
+    GamePaused -> GamePlaying
+    GamePlaying -> GamePaused
+    GameWon -> game_status
   }
 }
 
@@ -466,12 +467,12 @@ fn view_screen_effects(model: Model) -> Picture {
 
 fn view_ui(model: Model) -> Picture {
   p.combine([
-    case model.paused {
-      Paused -> view_pause_screen(model)
-      NotPaused -> p.blank()
+    case model.game_status {
+      GamePaused -> view_pause_screen(model)
+      GamePlaying -> p.blank()
       GameWon -> view_victory_screen(model)
     },
-    view_pause_button(model.paused, model.current_time, model.consts)
+    view_pause_button(model.game_status, model.current_time, model.consts)
       |> p.translate_xy(17.0, values.height -. 17.0),
   ])
 }
@@ -569,7 +570,7 @@ fn view_instructions(
 }
 
 fn view_pause_button(
-  paused: PauseStatus,
+  game_status: GameStatus,
   current_time: Float,
   consts: Consts,
 ) -> Picture {
@@ -577,8 +578,8 @@ fn view_pause_button(
     p.circle(15.0)
       |> p.fill(consts.color_white_transparent)
       |> p.stroke_none,
-    case paused {
-      Paused | GameWon -> {
+    case game_status {
+      GamePaused | GameWon -> {
         let label_text = "esc"
         let label_scale = 0.5
         let label =
@@ -600,7 +601,7 @@ fn view_pause_button(
         ])
       }
 
-      NotPaused ->
+      GamePlaying ->
         view_icon_pause(consts.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
     },
@@ -613,7 +614,9 @@ fn pause_press_region() -> PressRegion {
     y: values.height -. 30.0,
     width: 30.0,
     height: 30.0,
-    on_press: fn(model) { change_paused(model, flip_paused(model.paused)) },
+    on_press: fn(model) {
+      change_game_status(model, flip_paused(model.game_status))
+    },
   )
 }
 
