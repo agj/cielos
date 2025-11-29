@@ -113,6 +113,7 @@ type Mouse {
 type Drag {
   NoDrag
   Dragging(start_pos: Vec2(Float), start_avatar_dir: Float)
+  Flicked(force: Float, released_time: Float)
 }
 
 type PauseStatus {
@@ -148,14 +149,14 @@ type Consts {
 fn update(model: Model, event: event.Event) -> Model {
   case event, model.paused {
     event.Tick(updated_time), Paused ->
-      Model(..model, current_time: updated_time)
+      Model(..model, current_time: updated_time, drag: NoDrag)
 
     event.Tick(updated_time), NotPaused -> {
       let delta_time = updated_time -. model.current_time
 
       Model(..model, current_time: updated_time)
       |> move_avatar(delta_time:)
-      |> change_rotation_by_dragging(delta_time)
+      |> change_rotation_by_drag_or_flick(delta_time)
       |> check_collisions
     }
 
@@ -216,8 +217,7 @@ fn update(model: Model, event: event.Event) -> Model {
         ),
       )
 
-    event.MouseReleased(event.MouseButtonLeft), NotPaused ->
-      Model(..model, drag: NoDrag)
+    event.MouseReleased(event.MouseButtonLeft), NotPaused -> set_flicking(model)
 
     // Ignore other events.
     _, _ -> model
@@ -283,9 +283,10 @@ fn change_rotation(model: Model, amount: Float) -> Model {
   )
 }
 
-fn change_rotation_by_dragging(model: Model, _delta_time: Float) -> Model {
+fn change_rotation_by_drag_or_flick(model: Model, _delta_time: Float) -> Model {
   case model.drag {
     NoDrag -> model
+
     Dragging(start_pos:, start_avatar_dir:) -> {
       let drag_diff = model.mouse.pos.x -. start_pos.x
       let angle_diff = drag_diff *. 0.005
@@ -294,6 +295,22 @@ fn change_rotation_by_dragging(model: Model, _delta_time: Float) -> Model {
         ..model,
         avatar: Vector(..model.avatar, dir: start_avatar_dir -. angle_diff),
       )
+    }
+
+    Flicked(..) -> model
+  }
+}
+
+fn set_flicking(model: Model) -> Model {
+  case model.drag {
+    NoDrag -> model
+    Flicked(..) -> model
+    Dragging(..) -> {
+      let flick_diff = model.mouse.pos.x -. model.mouse.prev_pos.x
+      let flick_time = model.current_time -. model.mouse.prev_pos_time
+      let force = flick_diff /. flick_time
+
+      Model(..model, drag: Flicked(force:, released_time: model.current_time))
     }
   }
 }
