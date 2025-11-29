@@ -111,6 +111,7 @@ type Mouse {
 type Drag {
   NoDrag
   Dragging(start_pos: Vec2(Float), start_avatar_dir: Float)
+  /// `force` is `flick_diff /. flick_time`
   Flicked(force: Float, released_time: Float)
 }
 
@@ -285,8 +286,7 @@ fn change_rotation_by_drag_or_flick(model: Model) -> Model {
     NoDrag -> model
 
     Dragging(start_pos:, start_avatar_dir:) -> {
-      let drag_diff = model.mouse.pos.x -. start_pos.x
-      let angle_diff = drag_diff *. 0.005
+      let angle_diff = pixels_to_angle(model.mouse.pos.x -. start_pos.x)
 
       Model(
         ..model,
@@ -295,15 +295,24 @@ fn change_rotation_by_drag_or_flick(model: Model) -> Model {
     }
 
     Flicked(force:, released_time:) -> {
-      let delta_time = model.current_time -. model.prev_tick_time
       let time_since_flick = model.current_time -. released_time
-      let angle_diff =
-        { 100.0 /. time_since_flick } *. force *. delta_time *. 0.005
+      let inertial_movement_progress =
+        float.min(1.0, time_since_flick /. values.flick_inertia_duration_ms)
 
-      Model(
-        ..model,
-        avatar: Vector(..model.avatar, dir: model.avatar.dir -. angle_diff),
-      )
+      case inertial_movement_progress >=. 1.0 {
+        True -> Model(..model, drag: NoDrag)
+
+        False -> {
+          let easing_factor = 1.0 -. ease_out_sine(inertial_movement_progress)
+          let delta_time = model.current_time -. model.prev_tick_time
+          let angle_diff = pixels_to_angle(delta_time *. force) *. easing_factor
+
+          Model(
+            ..model,
+            avatar: Vector(..model.avatar, dir: model.avatar.dir -. angle_diff),
+          )
+        }
+      }
     }
   }
 }
@@ -850,8 +859,17 @@ fn normalize_angle(radians: Float) -> Float {
   }
 }
 
+/// Converts a distance in viewport pixels to an angle of view.
+fn pixels_to_angle(pixels: Float) -> Float {
+  pixels *. 0.005
+}
+
 /// Interpolates between two `Float` values `by` a factor from `0.0` through
 /// `1.0`.
 fn interpolate(from from: Float, to to: Float, by factor: Float) {
   { { to -. from } *. factor } +. from
+}
+
+fn ease_out_sine(progress: Float) -> Float {
+  maths.sin(progress *. { maths.tau() /. 4.0 })
 }
