@@ -44,7 +44,7 @@ fn init(_config: canvas.Config) -> Model {
 
   Model(
     avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
-    camera: Camera(lagging_dir: dir, start_move_time: 0.0),
+    rotation_force: 0.0,
     speed: 0.01,
     objects:,
     mouse: Mouse(pos: Vec2(0.0, 0.0), prev_pos: Vec2(0.0, 0.0)),
@@ -75,7 +75,7 @@ fn init(_config: canvas.Config) -> Model {
 type Model {
   Model(
     avatar: Vector,
-    camera: Camera,
+    rotation_force: Float,
     speed: Float,
     objects: List(Object),
     mouse: Mouse,
@@ -100,10 +100,6 @@ type Object {
 type ObjectKind {
   StarObject
   CollectedStarObject(collected_time: Float)
-}
-
-type Camera {
-  Camera(lagging_dir: Float, start_move_time: Float)
 }
 
 type Mouse {
@@ -164,6 +160,7 @@ fn update(model: Model, event: event.Event) -> Model {
       )
       |> move_avatar
       |> change_rotation_by_input
+      |> apply_rotation_force
       |> check_collisions
     }
 
@@ -171,13 +168,13 @@ fn update(model: Model, event: event.Event) -> Model {
     event.KeyboardPressed(event.KeyLeftArrow), NotPaused ->
       Model(..model, keyboard: Keyboard(..model.keyboard, left: True))
 
-    event.KeyboardRelased(event.KeyLeftArrow), NotPaused ->
-      Model(..model, keyboard: Keyboard(..model.keyboard, left: False))
-
     event.KeyboardPressed(event.KeyRightArrow), NotPaused ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: True))
 
-    event.KeyboardRelased(event.KeyRightArrow), NotPaused ->
+    event.KeyboardRelased(event.KeyLeftArrow), _ ->
+      Model(..model, keyboard: Keyboard(..model.keyboard, left: False))
+
+    event.KeyboardRelased(event.KeyRightArrow), _ ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
     event.KeyboardPressed(event.KeyUpArrow), NotPaused ->
@@ -278,31 +275,11 @@ fn move_avatar(model: Model) -> Model {
   )
 }
 
-/// Changes avatar rotation by an amount, the canonical being `1.0` or `-1.0`,
-/// which is adjusted by time elapsed in last frame.
-fn change_rotation(model: Model, amount: Float) -> Model {
-  let delta_time = model.current_time -. model.prev_tick_time
-  let amount_by_time = amount *. delta_time
-
-  Model(
-    ..model,
-    avatar: rotate_avatar(model.avatar, amount_by_time),
-    camera: Camera(
-      start_move_time: model.current_time,
-      lagging_dir: get_camera_dir(
-        model.camera,
-        avatar_dir: model.avatar.dir,
-        current_time: model.current_time,
-      ),
-    ),
-  )
-}
-
 fn change_rotation_by_input(model: Model) -> Model {
   case model.keyboard, model.drag {
-    Keyboard(left: True, right: False), _ -> change_rotation(model, -1.0)
+    Keyboard(left: True, right: False), _ -> change_rotation_force(model, -1.0)
 
-    Keyboard(left: False, right: True), _ -> change_rotation(model, 1.0)
+    Keyboard(left: False, right: True), _ -> change_rotation_force(model, 1.0)
 
     _, NoDrag -> model
 
@@ -334,6 +311,43 @@ fn change_rotation_by_input(model: Model) -> Model {
           )
         }
       }
+    }
+  }
+}
+
+fn change_rotation_force(model: Model, amount: Float) -> Model {
+  let delta_time = model.current_time -. model.prev_tick_time
+  let amount_by_time =
+    amount *. delta_time *. values.rotation_force_acceleration
+  let new_rotation_force =
+    float.clamp(model.rotation_force +. amount_by_time, min: -2.0, max: 2.0)
+
+  echo new_rotation_force
+
+  Model(..model, rotation_force: new_rotation_force)
+}
+
+fn apply_rotation_force(model: Model) -> Model {
+  case float.absolute_value(model.rotation_force) >. 0.00000001 {
+    False -> model
+    True -> {
+      let delta_time = model.current_time -. model.prev_tick_time
+      let angle_diff = model.rotation_force *. delta_time
+      let dampening_factor =
+        float.min(
+          1.0,
+          1.0
+            -. {
+            1.0 /. { delta_time *. values.rotation_force_dampening_softness }
+          },
+        )
+      let new_rotation_force = model.rotation_force *. dampening_factor
+
+      Model(
+        ..model,
+        rotation_force: new_rotation_force,
+        avatar: Vector(..model.avatar, dir: { model.avatar.dir +. angle_diff }),
+      )
     }
   }
 }
@@ -370,20 +384,10 @@ fn change_speed(model: Model, direction: Float) -> Model {
   )
 }
 
-/// Rotates avatar's direction by an amount, which is scaled according to
-/// `values.rotation_speed`.
-fn rotate_avatar(avatar: Vector, amount: Float) -> Vector {
-  Vector(..avatar, dir: avatar.dir +. { values.rotation_speed *. amount })
-}
-
 // VIEW
 
 fn view(model: Model) -> Picture {
-  let camera =
-    Vector(
-      ..model.avatar,
-      dir: get_camera_dir(model.camera, model.avatar.dir, model.current_time),
-    )
+  let camera = model.avatar
 
   let content =
     p.combine(
@@ -818,30 +822,6 @@ fn view_icon_play(color: Colour) -> Picture {
 }
 
 // UTILS
-
-/// Gets the direction (as an angle in radians) that the camera is facing at the
-/// current time, smoothing out rotation after user input, and with the avatar's
-/// direction as its base.
-fn get_camera_dir(
-  camera: Camera,
-  avatar_dir avatar_dir: Float,
-  current_time current_time: Float,
-) -> Float {
-  let total_time = 50.0
-  let start_time = camera.start_move_time
-  let end_time = start_time +. total_time
-
-  case current_time >=. end_time {
-    True -> avatar_dir
-
-    False -> {
-      let rotation_progress = { current_time -. start_time } /. total_time
-
-      { avatar_dir *. rotation_progress }
-      +. { camera.lagging_dir *. { 1.0 -. rotation_progress } }
-    }
-  }
-}
 
 /// Gets a scale factor for an object that is `distance` units away from the
 /// camera.
