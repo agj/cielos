@@ -325,6 +325,154 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
         ]),
       ])
 
+    "0" ->
+      p.combine([
+        // Around.
+        p.lines([
+          // Top-left, going right.
+          #(0.0, 1.0),
+          #(11.0, 1.0),
+          #(11.0, 11.0),
+          #(1.0, 11.0),
+          #(1.0, 1.0),
+        ]),
+        // Dot.
+        p.lines([
+          #(5.0, 6.0),
+          #(7.0, 6.0),
+        ]),
+      ])
+
+    "1" ->
+      p.combine([
+        // Stem.
+        p.lines([
+          // Center-top.
+          #(6.0, 0.0),
+          #(6.0, 11.0),
+        ]),
+        // Foot serif.
+        p.lines([
+          // Bottom-left.
+          #(0.0, 11.0),
+          #(12.0, 11.0),
+        ]),
+        // Beak.
+        p.lines([
+          #(1.0, 3.0),
+          #(6.0, 3.0),
+        ]),
+      ])
+
+    "2" ->
+      p.lines([
+        // Top-left.
+        #(1.0, 3.0),
+        #(1.0, 1.0),
+        // Top-right.
+        #(11.0, 1.0),
+        #(11.0, 7.0),
+        // Mid-left.
+        #(1.0, 7.0),
+        #(1.0, 11.0),
+        #(12.0, 11.0),
+      ])
+
+    "3" ->
+      p.combine([
+        // Around.
+        p.lines([
+          // Top-left
+          #(1.0, 3.0),
+          #(1.0, 1.0),
+          // Top-right.
+          #(11.0, 1.0),
+          #(11.0, 11.0),
+          // Bottom-left.
+          #(1.0, 11.0),
+          #(1.0, 9.0),
+        ]),
+        // Middle stroke.
+        p.lines([
+          // Middle.
+          #(5.0, 6.0),
+          #(11.0, 6.0),
+        ]),
+      ])
+
+    "4" ->
+      p.combine([
+        // Left angle.
+        p.lines([
+          // Mid-right.
+          #(11.0, 7.0),
+          #(1.0, 7.0),
+          #(1.0, 0.0),
+        ]),
+        p.lines([
+          // Top-right.
+          #(11.0, 0.0),
+          #(11.0, 12.0),
+        ]),
+      ])
+
+    "5" ->
+      view_letter("2", color)
+      |> p.scale_y(-1.0)
+      |> p.translate_y(12.0)
+
+    "6" ->
+      p.lines([
+        // Mid-left.
+        #(1.0, 5.0),
+        #(11.0, 5.0),
+        // Bottom-right.
+        #(11.0, 11.0),
+        #(1.0, 11.0),
+        // Top-left.
+        #(1.0, 1.0),
+        #(12.0, 1.0),
+      ])
+
+    "7" ->
+      p.lines([
+        // Top-left.
+        #(0.0, 1.0),
+        #(11.0, 1.0),
+        // Diagonal start.
+        #(11.0, 3.0),
+        #(7.0, 7.0),
+        #(7.0, 12.0),
+      ])
+
+    "8" ->
+      p.combine([
+        // Top oval (top-half drawn only).
+        p.lines([
+          // Mid-left.
+          #(2.0, 6.0),
+          #(2.0, 1.0),
+          // Top-right.
+          #(10.0, 1.0),
+          #(10.0, 6.0),
+        ]),
+        // Bottom oval.
+        p.lines([
+          // Mid-left.
+          #(0.0, 6.0),
+          #(11.0, 6.0),
+          // Bottom-right.
+          #(11.0, 11.0),
+          #(1.0, 11.0),
+          #(1.0, 6.0),
+        ]),
+      ])
+
+    "9" ->
+      view_letter("6", color)
+      |> p.rotate(p.angle_rad(maths.pi()))
+      |> p.translate_xy(12.0, 12.0)
+
     "←" ->
       p.combine([
         // Angle.

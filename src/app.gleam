@@ -414,14 +414,29 @@ fn view(model: Model) -> Picture {
 fn view_ui(model: Model) -> Picture {
   p.combine([
     case model.paused {
-      Paused ->
+      Paused -> {
+        let n_remaining_stars =
+          model.objects
+          |> list.fold(0, fn(acc, object) {
+            case object.kind {
+              StarObject -> acc + 1
+              _ -> acc
+            }
+          })
+
         p.combine([
           view_title(model.current_time, model.consts)
             |> p.translate_xy(0.0, 80.0),
-          view_instructions(model.current_time, model.consts)
+          view_instructions(
+            current_time: model.current_time,
+            n_remaining_stars:,
+            consts: model.consts,
+          )
             |> p.translate_xy(0.0, 200.0),
           view_links(model.current_time, model.consts),
         ])
+      }
+
       NotPaused -> p.blank()
     },
     view_pause_button(model.paused, model.current_time, model.consts)
@@ -459,8 +474,15 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
 
 /// Rendered already centered horizontally on the screen, though vertically it's
 /// at 0.
-fn view_instructions(current_time: Float, consts: Consts) -> Picture {
-  let texts = ["←→ drag or keys to turn", "collect stars"]
+fn view_instructions(
+  current_time current_time: Float,
+  n_remaining_stars n_remaining_stars: Int,
+  consts consts: Consts,
+) -> Picture {
+  let texts = [
+    "←→ drag or keys to turn",
+    "collect " <> int.to_string(n_remaining_stars) <> " stars",
+  ]
   let scale = 0.75
   let max_width =
     texts
