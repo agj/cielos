@@ -296,8 +296,9 @@ fn change_rotation_by_drag_or_flick(model: Model) -> Model {
 
     Flicked(force:, released_time:) -> {
       let delta_time = model.current_time -. model.prev_tick_time
-      let time_diff = model.current_time -. released_time
-      let angle_diff = { 1.0 /. time_diff } *. force *. delta_time *. 0.3
+      let time_since_flick = model.current_time -. released_time
+      let angle_diff =
+        { 100.0 /. time_since_flick } *. force *. delta_time *. 0.005
 
       Model(
         ..model,
