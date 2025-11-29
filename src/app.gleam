@@ -47,13 +47,10 @@ fn init(_config: canvas.Config) -> Model {
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     speed: 0.01,
     objects:,
-    mouse: Mouse(
-      pos: Vec2(0.0, 0.0),
-      prev_pos: Vec2(0.0, 0.0),
-      prev_pos_time: 0.0,
-    ),
+    mouse: Mouse(pos: Vec2(0.0, 0.0), prev_pos: Vec2(0.0, 0.0)),
     drag: NoDrag,
     current_time: 0.0,
+    prev_tick_time: 0.0,
     paused: Paused,
     press_regions: list.flatten([
       [pause_press_region()],
@@ -83,6 +80,7 @@ type Model {
     mouse: Mouse,
     drag: Drag,
     current_time: Float,
+    prev_tick_time: Float,
     paused: PauseStatus,
     press_regions: List(PressRegion),
     consts: Consts,
@@ -107,7 +105,7 @@ type Camera {
 }
 
 type Mouse {
-  Mouse(pos: Vec2(Float), prev_pos: Vec2(Float), prev_pos_time: Float)
+  Mouse(pos: Vec2(Float), prev_pos: Vec2(Float))
 }
 
 type Drag {
@@ -152,11 +150,13 @@ fn update(model: Model, event: event.Event) -> Model {
       Model(..model, current_time: updated_time, drag: NoDrag)
 
     event.Tick(updated_time), NotPaused -> {
-      let delta_time = updated_time -. model.current_time
-
-      Model(..model, current_time: updated_time)
-      |> move_avatar(delta_time:)
-      |> change_rotation_by_drag_or_flick(delta_time)
+      Model(
+        ..model,
+        current_time: updated_time,
+        prev_tick_time: model.current_time,
+      )
+      |> move_avatar
+      |> change_rotation_by_drag_or_flick
       |> check_collisions
     }
 
@@ -201,6 +201,9 @@ fn update(model: Model, event: event.Event) -> Model {
                   start_pos: model.mouse.pos,
                   start_avatar_dir: model.avatar.dir,
                 ),
+                // Adjustment made for touch interfaces, which don't receive
+                // `MouseMoved` events before touch.
+                mouse: Mouse(..model.mouse, prev_pos: model.mouse.pos),
               )
           }
         }
@@ -208,14 +211,7 @@ fn update(model: Model, event: event.Event) -> Model {
     }
 
     event.MouseMoved(x, y), _ ->
-      Model(
-        ..model,
-        mouse: Mouse(
-          pos: Vec2(x, y),
-          prev_pos: model.mouse.pos,
-          prev_pos_time: model.current_time,
-        ),
-      )
+      Model(..model, mouse: Mouse(pos: Vec2(x, y), prev_pos: model.mouse.pos))
 
     event.MouseReleased(event.MouseButtonLeft), NotPaused -> set_flicking(model)
 
@@ -255,7 +251,8 @@ fn flip_paused(paused: PauseStatus) -> PauseStatus {
   }
 }
 
-fn move_avatar(model: Model, delta_time delta_time: Float) -> Model {
+fn move_avatar(model: Model) -> Model {
+  let delta_time = model.current_time -. model.prev_tick_time
   let r = model.speed *. delta_time
   let #(tx, ty) = maths.polar_to_cartesian(r, model.avatar.dir)
 
@@ -283,7 +280,7 @@ fn change_rotation(model: Model, amount: Float) -> Model {
   )
 }
 
-fn change_rotation_by_drag_or_flick(model: Model, delta_time: Float) -> Model {
+fn change_rotation_by_drag_or_flick(model: Model) -> Model {
   case model.drag {
     NoDrag -> model
 
@@ -298,6 +295,7 @@ fn change_rotation_by_drag_or_flick(model: Model, delta_time: Float) -> Model {
     }
 
     Flicked(force:, released_time:) -> {
+      let delta_time = model.current_time -. model.prev_tick_time
       let time_diff = model.current_time -. released_time
       let angle_diff = { 1.0 /. time_diff } *. force *. delta_time *. 0.3
 
@@ -315,10 +313,17 @@ fn set_flicking(model: Model) -> Model {
     Flicked(..) -> model
     Dragging(..) -> {
       let flick_diff = model.mouse.pos.x -. model.mouse.prev_pos.x
-      let flick_time = model.current_time -. model.mouse.prev_pos_time
+      let flick_time = model.current_time -. model.prev_tick_time
       let force = flick_diff /. flick_time
 
-      Model(..model, drag: Flicked(force:, released_time: model.current_time))
+      case float.absolute_value(force) >. 0.01 {
+        True ->
+          Model(
+            ..model,
+            drag: Flicked(force:, released_time: model.current_time),
+          )
+        False -> Model(..model, drag: NoDrag)
+      }
     }
   }
 }
