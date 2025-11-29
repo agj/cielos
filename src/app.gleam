@@ -314,8 +314,6 @@ fn change_rotation_force(model: Model, amount: Float) -> Model {
   let new_rotation_force =
     float.clamp(model.rotation_force +. amount_by_time, min: -2.0, max: 2.0)
 
-  echo new_rotation_force
-
   Model(..model, rotation_force: new_rotation_force)
 }
 
