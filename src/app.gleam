@@ -47,7 +47,11 @@ fn init(_config: canvas.Config) -> Model {
     camera: Camera(lagging_dir: dir, start_move_time: 0.0),
     speed: 0.01,
     objects:,
-    mouse_pos: Vec2(0.0, 0.0),
+    mouse: Mouse(
+      pos: Vec2(0.0, 0.0),
+      prev_pos: Vec2(0.0, 0.0),
+      prev_pos_time: 0.0,
+    ),
     drag: NoDrag,
     current_time: 0.0,
     paused: Paused,
@@ -76,7 +80,7 @@ type Model {
     camera: Camera,
     speed: Float,
     objects: List(Object),
-    mouse_pos: Vec2(Float),
+    mouse: Mouse,
     drag: Drag,
     current_time: Float,
     paused: PauseStatus,
@@ -102,9 +106,13 @@ type Camera {
   Camera(lagging_dir: Float, start_move_time: Float)
 }
 
+type Mouse {
+  Mouse(pos: Vec2(Float), prev_pos: Vec2(Float), prev_pos_time: Float)
+}
+
 type Drag {
   NoDrag
-  Dragging(start_pos: Vec2(Float))
+  Dragging(start_pos: Vec2(Float), start_avatar_dir: Float)
 }
 
 type PauseStatus {
@@ -168,16 +176,14 @@ fn update(model: Model, event: event.Event) -> Model {
       change_paused(model, flip_paused(model.paused))
 
     // Mouse.
-    event.MouseMoved(x, y), _ -> Model(..model, mouse_pos: Vec2(x, y))
-
     event.MousePressed(event.MouseButtonLeft), _ -> {
       let press_region =
         model.press_regions
         |> list.find(fn(region) {
-          model.mouse_pos.x >=. region.x
-          && model.mouse_pos.x <. region.x +. region.width
-          && model.mouse_pos.y >=. region.y
-          && model.mouse_pos.y <. region.y +. region.height
+          model.mouse.pos.x >=. region.x
+          && model.mouse.pos.x <. region.x +. region.width
+          && model.mouse.pos.y >=. region.y
+          && model.mouse.pos.y <. region.y +. region.height
         })
 
       case press_region {
@@ -188,11 +194,27 @@ fn update(model: Model, event: event.Event) -> Model {
           case model.paused {
             Paused -> change_paused(model, NotPaused)
             NotPaused ->
-              Model(..model, drag: Dragging(start_pos: model.mouse_pos))
+              Model(
+                ..model,
+                drag: Dragging(
+                  start_pos: model.mouse.pos,
+                  start_avatar_dir: model.avatar.dir,
+                ),
+              )
           }
         }
       }
     }
+
+    event.MouseMoved(x, y), _ ->
+      Model(
+        ..model,
+        mouse: Mouse(
+          pos: Vec2(x, y),
+          prev_pos: model.mouse.pos,
+          prev_pos_time: model.current_time,
+        ),
+      )
 
     event.MouseReleased(event.MouseButtonLeft), NotPaused ->
       Model(..model, drag: NoDrag)
@@ -261,31 +283,17 @@ fn change_rotation(model: Model, amount: Float) -> Model {
   )
 }
 
-fn change_rotation_by_dragging(model: Model, delta_time: Float) -> Model {
+fn change_rotation_by_dragging(model: Model, _delta_time: Float) -> Model {
   case model.drag {
     NoDrag -> model
-    Dragging(start_pos:) -> {
-      // Actual dead zone is double this, as it extends in both directions.
-      let dead_zone = 2.0
-      let dampen_factor = 0.00001
-      let mouse_x_movement = model.mouse_pos.x -. start_pos.x
-      let x_movement =
-        case mouse_x_movement >. 0.0 {
-          True ->
-            float.max(0.0, mouse_x_movement -. dead_zone)
-            |> float.power(2.0)
-          False ->
-            float.min(0.0, mouse_x_movement +. dead_zone)
-            |> float.power(2.0)
-            |> result.map(float.negate)
-        }
-        |> result.unwrap(0.0)
-      let drag_factor =
-        x_movement *. dampen_factor
-        |> float.clamp(min: -0.03, max: 0.03)
-      let rotate_amount = drag_factor *. delta_time
+    Dragging(start_pos:, start_avatar_dir:) -> {
+      let drag_diff = model.mouse.pos.x -. start_pos.x
+      let angle_diff = drag_diff *. 0.005
 
-      change_rotation(model, rotate_amount)
+      Model(
+        ..model,
+        avatar: Vector(..model.avatar, dir: start_avatar_dir -. angle_diff),
+      )
     }
   }
 }
