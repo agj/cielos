@@ -223,7 +223,7 @@ fn update(model: Model, event: event.Event) -> Model {
 }
 
 fn check_collisions(model: Model) -> Model {
-  let non_collided_objects =
+  let processed_objects =
     model.objects
     |> list.map(fn(object) {
       case
@@ -239,7 +239,11 @@ fn check_collisions(model: Model) -> Model {
       }
     })
 
-  Model(..model, objects: non_collided_objects)
+  Model(..model, objects: processed_objects)
+}
+
+fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
+  list.count(objects, where: fn(object) { object.kind == kind })
 }
 
 fn change_paused(model: Model, new_paused: PauseStatus) -> Model {
@@ -406,34 +410,58 @@ fn view(model: Model) -> Picture {
     // Center.
     |> p.translate_xy(values.center.x, values.center.y)
 
-  p.combine([model.consts.background_picture, content, view_ui(model)])
+  p.combine([
+    model.consts.background_picture,
+    content,
+    view_screen_effects(model),
+    view_ui(model),
+  ])
+}
+
+fn view_screen_effects(model: Model) -> Picture {
+  let collected_star_collection_times =
+    list.filter_map(model.objects, fn(object) {
+      case object.kind {
+        CollectedStarObject(time) -> Ok(time)
+        _ -> Error(Nil)
+      }
+    })
+  let last_time_star_collected =
+    list.fold(collected_star_collection_times, from: -1000.0, with: float.max)
+  let time_since_last_star_collected =
+    model.current_time -. last_time_star_collected
+  let collect_flash_duration = 300.0
+  let flash_progress = time_since_last_star_collected /. collect_flash_duration
+
+  case flash_progress <. 1.0 {
+    False -> p.blank()
+
+    True -> {
+      let assert Ok(color) =
+        colour.from_hsla(0.0, 0.0, 1.0, 1.0 -. flash_progress)
+
+      p.rectangle(values.width, values.height)
+      |> p.fill(color)
+      |> p.stroke_none
+    }
+  }
 }
 
 fn view_ui(model: Model) -> Picture {
   p.combine([
     case model.paused {
-      Paused -> {
-        let n_remaining_stars =
-          model.objects
-          |> list.fold(0, fn(acc, object) {
-            case object.kind {
-              StarObject -> acc + 1
-              _ -> acc
-            }
-          })
-
+      Paused ->
         p.combine([
           view_title(model.current_time, model.consts)
             |> p.translate_xy(0.0, 80.0),
           view_instructions(
             current_time: model.current_time,
-            n_remaining_stars:,
+            n_remaining_stars: count_objects(model.objects, StarObject),
             consts: model.consts,
           )
             |> p.translate_xy(0.0, 200.0),
           view_links(model.current_time, model.consts),
         ])
-      }
 
       NotPaused -> p.blank()
     },
