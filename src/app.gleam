@@ -283,7 +283,7 @@ fn change_rotation(model: Model, amount: Float) -> Model {
   )
 }
 
-fn change_rotation_by_drag_or_flick(model: Model, _delta_time: Float) -> Model {
+fn change_rotation_by_drag_or_flick(model: Model, delta_time: Float) -> Model {
   case model.drag {
     NoDrag -> model
 
@@ -297,7 +297,15 @@ fn change_rotation_by_drag_or_flick(model: Model, _delta_time: Float) -> Model {
       )
     }
 
-    Flicked(..) -> model
+    Flicked(force:, released_time:) -> {
+      let time_diff = model.current_time -. released_time
+      let angle_diff = { 1.0 /. time_diff } *. force *. delta_time *. 0.3
+
+      Model(
+        ..model,
+        avatar: Vector(..model.avatar, dir: model.avatar.dir -. angle_diff),
+      )
+    }
   }
 }
 
