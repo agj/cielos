@@ -478,6 +478,8 @@ fn view_ui(model: Model) -> Picture {
 }
 
 fn view_victory_screen(model: Model) -> Picture {
+  let total_stars = list.length(model.objects)
+
   p.combine([
     text.view_wobbly_text_x_centered(
       "congratulations",
@@ -486,7 +488,7 @@ fn view_victory_screen(model: Model) -> Picture {
     )
       |> p.translate_xy(values.width *. 0.5, 70.0),
     text.view_wobbly_text_x_centered(
-      "you collected all stars",
+      "you collected all " <> int.to_string(total_stars) <> " stars",
       model.current_time,
       model.consts.color_dark_blue,
     )
