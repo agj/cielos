@@ -480,35 +480,54 @@ fn view_ui(model: Model) -> Picture {
 fn view_victory_screen(model: Model) -> Picture {
   let total_stars = list.length(model.objects)
 
-  p.combine([
-    text.view_wobbly_text_x_centered(
-      "♥︎congratulations♥︎",
-      model.current_time,
-      model.consts.color_dark_blue,
-    )
-      // |> p.scale_uniform(2.0)
-      |> p.translate_x(values.width *. 0.5),
-    ..[
-      "you collected all " <> int.to_string(total_stars) <> " stars",
-      "you are super player",
-      "",
-      "if you like",
-      "you can play again",
-    ]
-    |> list.index_map(fn(line_text, i) {
+  let top_message =
+    p.combine([
       text.view_wobbly_text_x_centered(
-        line_text,
+        "♥︎congratulations♥︎",
         model.current_time,
-        model.consts.color_dark_blue,
+        model.consts.color_yellow,
       )
-      |> p.scale_uniform(0.5)
-      |> p.translate_xy(
-        values.width *. 0.5,
-        30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
-      )
-    })
-  ])
-  |> p.translate_y(80.0)
+        |> p.translate_x(values.width *. 0.5),
+      ..[
+        "you collected all " <> int.to_string(total_stars) <> " stars",
+        "you are super player",
+      ]
+      |> list.index_map(fn(line_text, i) {
+        text.view_wobbly_text_x_centered(
+          line_text,
+          model.current_time,
+          model.consts.color_dark_blue,
+        )
+        |> p.scale_uniform(0.5)
+        |> p.translate_xy(
+          values.width *. 0.5,
+          30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
+        )
+      })
+    ])
+    |> p.translate_y(80.0)
+
+  let play_again_message =
+    p.combine(
+      [
+        "  if you like",
+        "← you can play again",
+      ]
+      |> list.index_map(fn(line_text, i) {
+        text.view_wobbly_text(
+          line_text,
+          model.current_time,
+          model.consts.color_white,
+        )
+        |> p.scale_uniform(0.5)
+        |> p.translate_y(
+          30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
+        )
+      }),
+    )
+    |> p.translate_xy(40.0, values.height -. 70.0)
+
+  p.combine([top_message, play_again_message])
 }
 
 fn view_pause_screen(model: Model) -> Picture {
@@ -599,11 +618,7 @@ fn view_pause_button(
         let label_text = "esc"
         let label_scale = 0.5
         let label =
-          text.view_wobbly_text(
-            label_text,
-            current_time,
-            consts.color_white_transparent,
-          )
+          text.view_wobbly_text(label_text, current_time, consts.color_white)
           |> p.scale_uniform(label_scale)
 
         p.combine([
