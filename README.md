@@ -17,7 +17,7 @@ a 12×12 grid.
 
 Sound effects by:
 
-- [JDSherbert](https://jdsherbert.itch.io/) (“select”).
+- [JDSherbert](https://jdsherbert.itch.io/) (“select”, “collect”).
 
 ## Development
 
@@ -35,3 +35,4 @@ Enter `just` to see the tasks available.
 This repo does not include the sound assets used in the distributed version, which are the following:
 
 - `assets/select.mp3` — `JDSherbert - Pixel UI SFX Pack - Cancel 2 (Square).mp3` (mono version) from [JDSherbert's sound pack](https://jdsherbert.itch.io/ultimate-ui-sfx-pack).
+- `assets/collect.mp3` — `JDSherbert - Pixel UI SFX Pack - Select 2 (Square).mp3` (mono version) from [JDSherbert's sound pack](https://jdsherbert.itch.io/ultimate-ui-sfx-pack).

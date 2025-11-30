@@ -323,6 +323,11 @@ fn check_collisions(model: Model) -> Model {
       }
     })
 
+  case processed_objects != model.objects {
+    True -> play_sound(CollectSound)
+    False -> Nil
+  }
+
   Model(
     ..model,
     objects: processed_objects,
@@ -362,11 +367,13 @@ fn flip_paused(model: Model) -> Model {
 
 type Sound {
   SelectSound
+  CollectSound
 }
 
 fn play_sound(sound: Sound) -> Nil {
   let sound_instance = case sound {
     SelectSound -> glor.new("./assets/select.mp3")
+    CollectSound -> glor.new("./assets/collect.mp3")
   }
   glor.set_volume(sound_instance, 0.5)
   glor.play(sound_instance)
