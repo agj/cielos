@@ -796,12 +796,6 @@ fn view_star(
         rotation:,
       )
 
-    Some(time) if current_time -. time <=. 1000.0 ->
-      // Explosion when collecting.
-      p.circle(1000.0)
-      |> p.fill(consts.color_white)
-      |> p.stroke_none
-
     Some(_) ->
       // Collected star.
       view_star_picture(
