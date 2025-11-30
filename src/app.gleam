@@ -75,6 +75,7 @@ fn generate_stars(
     True, [] ->
       generate_stars(count - 1, seed, [
         Object(
+          // Draw straight north.
           pos: Vec2(0.0, values.star_separation *. -1.0),
           height: -1.0,
           kind: StarObject,
@@ -85,8 +86,9 @@ fn generate_stars(
     True, [one] ->
       generate_stars(count - 1, seed, [
         Object(
+          // Straight north again.
           pos: Vec2(0.0, values.star_separation *. -2.0),
-          height: 0.0,
+          height: -1.0,
           kind: StarObject,
         ),
         one,
@@ -94,7 +96,8 @@ fn generate_stars(
 
     // Rest.
     True, [last, prev, ..] -> {
-      let prev_dir =
+      // Randomize position.
+      let last_dir =
         angle_between(
           from_x: prev.pos.x,
           from_y: prev.pos.y,
@@ -105,11 +108,28 @@ fn generate_stars(
       let pos =
         vec2f.add(
           last.pos,
-          pos_from_polar(values.star_separation, prev_dir +. angle_diff),
+          pos_from_polar(
+            length: values.star_separation,
+            angle: last_dir +. angle_diff,
+          ),
         )
-      let #(height, seed) =
-        random.float(-2.0, 2.0)
-        |> random.step(seed)
+
+      // Randomize height, based on vertical trajectory (pitch angle).
+      let last_pitch =
+        angle_between(
+          from_x: 0.0,
+          from_y: prev.height,
+          to_x: values.star_separation,
+          to_y: last.height,
+        )
+      let #(pitch_diff, seed) = get_random_angle(0.005, seed)
+      let pitch = last_pitch +. pitch_diff
+      let height =
+        maths.tan(pitch) *. values.star_separation
+        |> float.clamp(
+          min: values.max_star_height *. -1.0,
+          max: values.max_star_height,
+        )
 
       generate_stars(count - 1, seed, [
         Object(pos:, height:, kind: StarObject),
@@ -123,7 +143,8 @@ fn generate_stars(
 }
 
 fn get_random_angle(max_turn: Float, seed: seed.Seed) -> #(Float, Seed) {
-  random.float(0.0, maths.tau() *. max_turn)
+  let angle = max_turn *. maths.tau() *. 0.5
+  random.float(angle *. -1.0, angle)
   |> random.step(seed)
 }
 
@@ -331,8 +352,7 @@ fn flip_paused(model: Model) -> Model {
     GamePaused -> Model(..model, game_status: GamePlaying)
     GamePlaying -> Model(..model, game_status: GamePaused)
     // Restart the game.
-    GameWon ->
-      init(seed.new(random.int(0, 9_999_999_999) |> random.sample(model.seed)))
+    GameWon -> init(model.seed)
   }
 }
 
