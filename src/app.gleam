@@ -180,8 +180,7 @@ fn update(model: Model, event: event.Event) -> Model {
     event.KeyboardRelased(event.KeyRightArrow), _ ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
-    event.KeyboardPressed(event.KeyEscape), _ ->
-      change_game_status(model, flip_paused(model.game_status))
+    event.KeyboardPressed(event.KeyEscape), _ -> flip_paused(model)
 
     // Mouse.
     event.MousePressed(event.MouseButtonLeft), _ -> {
@@ -201,7 +200,7 @@ fn update(model: Model, event: event.Event) -> Model {
           // If there are no regions, we just do the default action.
           case model.game_status {
             GameWon -> model
-            GamePaused -> change_game_status(model, GamePlaying)
+            GamePaused -> Model(..model, game_status: GamePlaying)
             GamePlaying ->
               Model(
                 ..model,
@@ -272,15 +271,12 @@ fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
   list.count(objects, where: fn(object) { object.kind == kind })
 }
 
-fn change_game_status(model: Model, new_status: GameStatus) -> Model {
-  Model(..model, game_status: new_status, drag: NoDrag)
-}
-
-fn flip_paused(game_status: GameStatus) -> GameStatus {
-  case game_status {
-    GamePaused -> GamePlaying
-    GamePlaying -> GamePaused
-    GameWon -> game_status
+fn flip_paused(model: Model) -> Model {
+  case model.game_status {
+    GamePaused -> Model(..model, game_status: GamePlaying)
+    GamePlaying -> Model(..model, game_status: GamePaused)
+    // Restart the game.
+    GameWon -> init()
   }
 }
 
@@ -664,9 +660,7 @@ fn pause_press_region() -> PressRegion {
     y: values.height -. 30.0,
     width: 30.0,
     height: 30.0,
-    on_press: fn(model) {
-      change_game_status(model, flip_paused(model.game_status))
-    },
+    on_press: flip_paused,
   )
 }
 
