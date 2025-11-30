@@ -7,6 +7,7 @@ import gleam/result
 import gleam/string
 import gleam_community/colour.{type Colour}
 import gleam_community/maths
+import glor
 import js
 import paint.{type Picture} as p
 import paint/canvas
@@ -349,12 +350,26 @@ fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
 }
 
 fn flip_paused(model: Model) -> Model {
+  play_sound(SelectSound)
+
   case model.game_status {
     GamePaused -> Model(..model, game_status: GamePlaying)
     GamePlaying -> Model(..model, game_status: GamePaused)
     // Restart the game.
     GameWon -> init(model.seed)
   }
+}
+
+type Sound {
+  SelectSound
+}
+
+fn play_sound(sound: Sound) -> Nil {
+  let sound_instance = case sound {
+    SelectSound -> glor.new("./assets/select.mp3")
+  }
+  glor.set_volume(sound_instance, 0.5)
+  glor.play(sound_instance)
 }
 
 fn move_avatar(model: Model) -> Model {

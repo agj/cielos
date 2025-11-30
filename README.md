@@ -13,6 +13,12 @@ the [Gleam](https://gleam.run/) programming language, using the
 The typeface used within the game is an ad-hoc collection of glyphs drawn using
 a 12×12 grid.
 
+## Credits
+
+Sound effects by:
+
+- [JDSherbert](https://jdsherbert.itch.io/) (“select”).
+
 ## Development
 
 You'll need Nix installed. If you also have direnv installed, do `direnv allow`
@@ -23,3 +29,9 @@ Enter `just` to see the tasks available.
 
 - `just develop` will launch a development server.
 - `just build` will create the release files under the `dist` directory.
+
+### Assets
+
+This repo does not include the sound assets used in the distributed version, which are the following:
+
+- `assets/select.mp3` — `JDSherbert - Pixel UI SFX Pack - Select 1 (Square).mp3` (mono version) from [JDSherbert's sound pack](https://jdsherbert.itch.io/ultimate-ui-sfx-pack).

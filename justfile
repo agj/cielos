@@ -14,6 +14,7 @@ develop: build-gleam qr
 build: build-gleam
     pnpm install
     pnpm exec vite build --base './'
+    cp ./assets/** ./dist/assets/
 
 # Build and deploy on Github Pages.
 deploy: build
