@@ -246,7 +246,26 @@ fn check_collisions(model: Model) -> Model {
       }
     })
 
-  Model(..model, objects: processed_objects)
+  Model(
+    ..model,
+    objects: processed_objects,
+    game_status: case check_won(model.objects) {
+      True -> GameWon
+      False -> model.game_status
+    },
+  )
+}
+
+fn check_won(objects: List(Object)) -> Bool {
+  let has_stars_remaining =
+    list.any(objects, fn(object) {
+      case object.kind {
+        StarObject -> True
+        _ -> False
+      }
+    })
+
+  !has_stars_remaining
 }
 
 fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
