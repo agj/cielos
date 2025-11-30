@@ -104,7 +104,8 @@ fn generate_stars(
           to_x: last.pos.x,
           to_y: last.pos.y,
         )
-      let #(angle_diff, seed) = get_random_angle(0.1, seed)
+      let #(angle_diff, seed) =
+        get_random_angle(values.max_star_generation_angle_variation_turns, seed)
       let pos =
         vec2f.add(
           last.pos,

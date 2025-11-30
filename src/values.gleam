@@ -10,6 +10,11 @@ pub const star_separation = 8.0
 
 pub const max_star_height = 2.0
 
+/// When stars are being generated, how much to variate the angle of the line
+/// from one star to the next. In "turns", i.e. this is multiplied by tau to
+/// get an angle in radians.
+pub const max_star_generation_angle_variation_turns = 0.25
+
 pub const speed = 0.01
 
 pub const rotation_force_acceleration = 0.000005
