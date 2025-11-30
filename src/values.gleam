@@ -6,6 +6,8 @@ pub const height = 300.0
 
 pub const center = Vec2(150.0, 150.0)
 
+pub const star_separation = 8.0
+
 pub const speed = 0.01
 
 pub const rotation_force_acceleration = 0.000005

@@ -11,6 +11,8 @@ import js
 import paint.{type Picture} as p
 import paint/canvas
 import paint/event
+import prng/random
+import prng/seed.{type Seed}
 import text
 import values
 import vec/vec2.{type Vec2, Vec2}
@@ -21,36 +23,25 @@ pub fn main() {
 }
 
 fn game_init(_config: canvas.Config) -> Model {
-  init()
+  init(seed.random())
 }
 
-fn init() -> Model {
-  let dir = 0.8 *. maths.tau()
+fn init(seed: Seed) -> Model {
   let assert Ok(color_white_transparent) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
   let assert Ok(color_dark_blue) = colour.from_hsl(0.6, 0.7, 0.7)
   let assert Ok(color_dark_blue_transparent) =
     colour.from_hsla(0.75, 0.5, 0.4, 0.05)
   let assert Ok(color_yellow) = colour.from_hsl(0.12, 1.0, 0.7)
 
-  let objects =
-    list.range(0, 200)
-    |> list.map(fn(i) {
-      let i_f = int.to_float(i)
-      let pos =
-        pos_from_polar(
-          length: { i_f +. 1.0 } *. 2.0 +. 10.0,
-          angle: i_f /. 20.0 *. maths.tau(),
-        )
-      let height = maths.sin(i_f /. 5.0 *. maths.tau())
-
-      Object(pos:, height:, kind: StarObject)
-    })
-
   Model(
     game_status: GamePaused,
-    avatar: Vector(pos: Vec2(0.0, 0.0), dir:),
+    avatar: Vector(
+      pos: Vec2(0.0, 0.0),
+      // Pointing north.
+      dir: -0.25 *. maths.tau(),
+    ),
     rotation_force: 0.0,
-    objects:,
+    objects: generate_stars(100, seed, []),
     mouse: Mouse(pos: Vec2(0.0, 0.0), prev_pos: Vec2(0.0, 0.0)),
     keyboard: Keyboard(left: False, right: False),
     drag: NoDrag,
@@ -70,7 +61,70 @@ fn init() -> Model {
       color_yellow:,
       color_orange: colour.orange,
     ),
+    seed:,
   )
+}
+
+fn generate_stars(
+  count: Int,
+  seed: seed.Seed,
+  acc: List(Object),
+) -> List(Object) {
+  case count > 0, acc {
+    // First.
+    True, [] ->
+      generate_stars(count - 1, seed, [
+        Object(
+          pos: Vec2(0.0, values.star_separation *. -1.0),
+          height: -1.0,
+          kind: StarObject,
+        ),
+      ])
+
+    // Second.
+    True, [one] ->
+      generate_stars(count - 1, seed, [
+        Object(
+          pos: Vec2(0.0, values.star_separation *. -2.0),
+          height: 0.0,
+          kind: StarObject,
+        ),
+        one,
+      ])
+
+    // Rest.
+    True, [last, prev, ..] -> {
+      let prev_dir =
+        angle_between(
+          from_x: prev.pos.x,
+          from_y: prev.pos.y,
+          to_x: last.pos.x,
+          to_y: last.pos.y,
+        )
+      let #(angle_diff, seed) = get_random_angle(0.1, seed)
+      let pos =
+        vec2f.add(
+          last.pos,
+          pos_from_polar(values.star_separation, prev_dir +. angle_diff),
+        )
+      let #(height, seed) =
+        random.float(-2.0, 2.0)
+        |> random.step(seed)
+
+      generate_stars(count - 1, seed, [
+        Object(pos:, height:, kind: StarObject),
+        ..acc
+      ])
+    }
+
+    // End.
+    False, _ -> acc
+  }
+}
+
+fn get_random_angle(max_turn: Float, seed: seed.Seed) -> #(Float, Seed) {
+  random.float(0.0, maths.tau() *. max_turn)
+  |> random.step(seed)
 }
 
 // MODEL
@@ -88,6 +142,7 @@ type Model {
     prev_tick_time: Float,
     press_regions: List(PressRegion),
     consts: Consts,
+    seed: Seed,
   )
 }
 
@@ -276,7 +331,8 @@ fn flip_paused(model: Model) -> Model {
     GamePaused -> Model(..model, game_status: GamePlaying)
     GamePlaying -> Model(..model, game_status: GamePaused)
     // Restart the game.
-    GameWon -> init()
+    GameWon ->
+      init(seed.new(random.int(0, 9_999_999_999) |> random.sample(model.seed)))
   }
 }
 
