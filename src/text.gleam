@@ -257,6 +257,11 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
         #(1.0, 1.0),
       ])
 
+    "p" ->
+      view_letter("b", color)
+      |> p.scale_y(-1.0)
+      |> p.translate_y(12.0)
+
     "r" ->
       p.lines([
         // Bottom-left.
@@ -506,6 +511,29 @@ pub fn view_letter(letter: String, color: Colour) -> Picture {
       |> p.rotate(p.angle_rad(maths.pi()))
       |> p.translate_xy(12.0, 12.0)
 
+    "♥︎" -> {
+      let right_half =
+        p.lines([
+          // Top-center.
+          #(5.0, 2.0),
+          #(6.0, 3.0),
+          // Diagonal.
+          #(8.0, 1.0),
+          #(9.0, 1.0),
+          // Diagonal.
+          #(11.0, 3.0),
+          #(11.0, 7.0),
+          // Diagonal.
+          #(7.0, 11.0),
+          // Bottom-center.
+          #(5.5, 11.0),
+        ])
+
+      p.combine([
+        right_half,
+        right_half |> p.scale_x(-1.0) |> p.translate_x(12.0),
+      ])
+    }
     _ -> p.blank()
   }
   |> p.stroke(color, 2.0)

@@ -482,19 +482,33 @@ fn view_victory_screen(model: Model) -> Picture {
 
   p.combine([
     text.view_wobbly_text_x_centered(
-      "congratulations",
+      "♥︎congratulations♥︎",
       model.current_time,
       model.consts.color_dark_blue,
     )
-      |> p.translate_xy(values.width *. 0.5, 70.0),
-    text.view_wobbly_text_x_centered(
+      // |> p.scale_uniform(2.0)
+      |> p.translate_x(values.width *. 0.5),
+    ..[
       "you collected all " <> int.to_string(total_stars) <> " stars",
-      model.current_time,
-      model.consts.color_dark_blue,
-    )
+      "you are super player",
+      "",
+      "if you like",
+      "you can play again",
+    ]
+    |> list.index_map(fn(line_text, i) {
+      text.view_wobbly_text_x_centered(
+        line_text,
+        model.current_time,
+        model.consts.color_dark_blue,
+      )
       |> p.scale_uniform(0.5)
-      |> p.translate_xy(values.width *. 0.5, 100.0),
+      |> p.translate_xy(
+        values.width *. 0.5,
+        30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
+      )
+    })
   ])
+  |> p.translate_y(80.0)
 }
 
 fn view_pause_screen(model: Model) -> Picture {
