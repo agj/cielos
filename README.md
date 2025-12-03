@@ -13,6 +13,10 @@ the [Gleam](https://gleam.run/) programming language, using the
 The typeface used within the game is an ad-hoc collection of glyphs drawn using
 a 12×12 grid.
 
+The code for the version released during the jam is preserved in the
+`jam-version` Git tag. The code was cleaned up a bit after that, and might
+further evolve in the future.
+
 ## Credits
 
 Sound effects by:
