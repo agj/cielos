@@ -27,6 +27,8 @@ fn game_init(_config: canvas.Config) -> Model {
   init(seed.random())
 }
 
+/// Model initialization. Takes a seed for the PRNG which is used to generate
+/// the level.
 fn init(seed: Seed) -> Model {
   let assert Ok(color_white_transparent) = colour.from_hsla(0.0, 1.0, 1.0, 0.5)
   let assert Ok(color_dark_blue) = colour.from_hsl(0.6, 0.7, 0.7)
@@ -66,6 +68,7 @@ fn init(seed: Seed) -> Model {
   )
 }
 
+/// Generate the level, composed of a snaking line of stars.
 fn generate_stars(
   count: Int,
   seed: seed.Seed,
@@ -142,12 +145,6 @@ fn generate_stars(
     // End.
     False, _ -> acc
   }
-}
-
-fn get_random_angle(max_turn: Float, seed: seed.Seed) -> #(Float, Seed) {
-  let angle = max_turn *. maths.tau() *. 0.5
-  random.float(angle *. -1.0, angle)
-  |> random.step(seed)
 }
 
 // MODEL
@@ -230,6 +227,8 @@ type Consts {
 
 fn update(model: Model, event: event.Event) -> Model {
   case event, model.game_status {
+    // Tick.
+    // 
     event.Tick(updated_time), GamePaused | event.Tick(updated_time), GameWon ->
       Model(..model, current_time: updated_time, drag: NoDrag)
 
@@ -246,6 +245,7 @@ fn update(model: Model, event: event.Event) -> Model {
     }
 
     // Keyboard.
+    // 
     event.KeyboardPressed(event.KeyLeftArrow), GamePlaying ->
       Model(..model, keyboard: Keyboard(..model.keyboard, left: True))
 
@@ -258,9 +258,10 @@ fn update(model: Model, event: event.Event) -> Model {
     event.KeyboardRelased(event.KeyRightArrow), _ ->
       Model(..model, keyboard: Keyboard(..model.keyboard, right: False))
 
-    event.KeyboardPressed(event.KeyEscape), _ -> flip_paused(model)
+    event.KeyboardPressed(event.KeyEscape), _ -> flip_game_status(model)
 
     // Mouse.
+    // 
     event.MousePressed(event.MouseButtonLeft), _ -> {
       let press_region =
         model.press_regions
@@ -306,6 +307,8 @@ fn update(model: Model, event: event.Event) -> Model {
   }
 }
 
+/// To be called on every `Tick` event. Processes avatar collisions against
+/// stars and updates their state.
 fn check_collisions(model: Model) -> Model {
   let processed_objects =
     model.objects
@@ -338,23 +341,8 @@ fn check_collisions(model: Model) -> Model {
   )
 }
 
-fn check_won(objects: List(Object)) -> Bool {
-  let has_stars_remaining =
-    list.any(objects, fn(object) {
-      case object.kind {
-        StarObject -> True
-        _ -> False
-      }
-    })
-
-  !has_stars_remaining
-}
-
-fn count_objects(objects: List(Object), kind: ObjectKind) -> Int {
-  list.count(objects, where: fn(object) { object.kind == kind })
-}
-
-fn flip_paused(model: Model) -> Model {
+/// Flips paused and playing status, or if game is already won, restarts it.
+fn flip_game_status(model: Model) -> Model {
   play_sound(SelectSound)
 
   case model.game_status {
@@ -365,20 +353,8 @@ fn flip_paused(model: Model) -> Model {
   }
 }
 
-type Sound {
-  SelectSound
-  CollectSound
-}
-
-fn play_sound(sound: Sound) -> Nil {
-  let sound_instance = case sound {
-    SelectSound -> glor.new("./assets/select.mp3")
-    CollectSound -> glor.new("./assets/collect.mp3")
-  }
-  glor.set_volume(sound_instance, 0.5)
-  glor.play(sound_instance)
-}
-
+/// To be called on every `Tick` event. Moves the avatar to its new position
+/// according to elapsed time, its direction and the speed constant.
 fn move_avatar(model: Model) -> Model {
   let delta_time = model.current_time -. model.prev_tick_time
   let r = values.speed *. delta_time
@@ -393,6 +369,9 @@ fn move_avatar(model: Model) -> Model {
   )
 }
 
+/// To be called on every `Tick` event. Checks user keyboard input and updates
+/// `rotation_force` accordingly, otherwise applies dragging and flicking
+/// rotation movement if doing such gestures.
 fn change_rotation_by_input(model: Model) -> Model {
   case model.keyboard, model.drag {
     Keyboard(left: True, right: False), _ -> change_rotation_force(model, -1.0)
@@ -433,6 +412,9 @@ fn change_rotation_by_input(model: Model) -> Model {
   }
 }
 
+/// To be called on every `Tick` event while user is pressing a key to change
+/// rotation. Updates the `rotation_force` by a certain amount, scaled by the
+/// elapsed time and a constant of acceleration.
 fn change_rotation_force(model: Model, amount: Float) -> Model {
   let delta_time = model.current_time -. model.prev_tick_time
   let amount_by_time =
@@ -443,6 +425,9 @@ fn change_rotation_force(model: Model, amount: Float) -> Model {
   Model(..model, rotation_force: new_rotation_force)
 }
 
+/// To be called on every `Tick` event. Updates the avatar direction by applying
+/// the `rotation_force`, and dampens the latter in order to slowly reduce it to
+/// zero when there's no user input.
 fn apply_rotation_force(model: Model) -> Model {
   case float.absolute_value(model.rotation_force) >. 0.00000001 {
     False -> model
@@ -468,6 +453,8 @@ fn apply_rotation_force(model: Model) -> Model {
   }
 }
 
+/// Used after a `MouseReleased` event to trigger the behavior of a flicking
+/// gesture if appropriate.
 fn set_flicking(model: Model) -> Model {
   case model.drag {
     NoDrag -> model
@@ -645,12 +632,15 @@ fn view_victory_screen(model: Model) -> Picture {
 }
 
 fn view_pause_screen(model: Model) -> Picture {
+  let n_remaining_stars =
+    list.count(model.objects, where: fn(object) { object.kind == StarObject })
+
   p.combine([
     view_title(model.current_time, model.consts)
       |> p.translate_xy(0.0, 80.0),
     view_instructions(
       current_time: model.current_time,
-      n_remaining_stars: count_objects(model.objects, StarObject),
+      n_remaining_stars:,
       consts: model.consts,
     )
       |> p.translate_xy(0.0, 200.0),
@@ -759,7 +749,7 @@ fn pause_press_region() -> PressRegion {
     y: values.height -. 30.0,
     width: 30.0,
     height: 30.0,
-    on_press: flip_paused,
+    on_press: flip_game_status,
   )
 }
 
@@ -1029,7 +1019,37 @@ fn view_icon_play(color: Colour) -> Picture {
   |> p.stroke_none
 }
 
+// SOUND
+
+type Sound {
+  SelectSound
+  CollectSound
+}
+
+/// Plays a sound as an effect.
+fn play_sound(sound: Sound) -> Nil {
+  let sound_instance = case sound {
+    SelectSound -> glor.new("./assets/select.mp3")
+    CollectSound -> glor.new("./assets/collect.mp3")
+  }
+  glor.set_volume(sound_instance, 0.5)
+  glor.play(sound_instance)
+}
+
 // UTILS
+
+/// Checks that no uncollected stars remain.
+fn check_won(objects: List(Object)) -> Bool {
+  let has_stars_remaining =
+    list.any(objects, fn(object) {
+      case object.kind {
+        StarObject -> True
+        _ -> False
+      }
+    })
+
+  !has_stars_remaining
+}
 
 /// Gets a scale factor for an object that is `distance` units away from the
 /// camera.
@@ -1073,6 +1093,12 @@ fn normalize_angle(radians: Float) -> Float {
 /// Converts a distance in viewport pixels to an angle of view.
 fn pixels_to_angle(pixels: Float) -> Float {
   pixels *. 0.005
+}
+
+fn get_random_angle(max_turn: Float, seed: seed.Seed) -> #(Float, Seed) {
+  let angle = max_turn *. maths.tau() *. 0.5
+  random.float(angle *. -1.0, angle)
+  |> random.step(seed)
 }
 
 /// Interpolates between two `Float` values `by` a factor from `0.0` through
