@@ -263,7 +263,7 @@ fn update(model: Model, event: event.Event) -> Model {
     // Mouse.
     // 
     event.MousePressed(event.MouseButtonLeft), _ -> {
-      let press_region =
+      let pressed_region =
         model.press_regions
         |> list.find(fn(region) {
           model.mouse.pos.x >=. region.x
@@ -272,11 +272,13 @@ fn update(model: Model, event: event.Event) -> Model {
           && model.mouse.pos.y <. region.y +. region.height
         })
 
-      case press_region {
+      case pressed_region {
+        // If there's a defined region that got pressed, we call its event
+        // handler.
         Ok(region) -> region.on_press(model)
 
-        Error(_) -> {
-          // If there are no regions, we just do the default action.
+        // If there are no regions, we just do the default stuff.
+        Error(_) ->
           case model.game_status {
             GameWon -> model
             GamePaused -> Model(..model, game_status: GamePlaying)
@@ -292,7 +294,6 @@ fn update(model: Model, event: event.Event) -> Model {
                 mouse: Mouse(..model.mouse, prev_pos: model.mouse.pos),
               )
           }
-        }
       }
     }
 
@@ -479,6 +480,8 @@ fn set_flicking(model: Model) -> Model {
 // VIEW
 
 fn view(model: Model) -> Picture {
+  // Never got around to making a visible on-screen avatar, so the camera and
+  // the avatar are one and the same.
   let camera = model.avatar
 
   let content =
@@ -527,6 +530,7 @@ fn view(model: Model) -> Picture {
   ])
 }
 
+/// Renders visual effects unrelated to perspective.
 fn view_screen_effects(model: Model) -> Picture {
   let collected_star_collection_times =
     list.filter_map(model.objects, fn(object) {
