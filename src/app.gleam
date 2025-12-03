@@ -54,7 +54,7 @@ fn init(seed: Seed) -> Model {
       [pause_press_region()],
       links_press_regions(),
     ]),
-    consts: Consts(
+    precomp: Precomp(
       background_picture: view_background(),
       shadow_picture: view_shadow(color_dark_blue_transparent),
       color_dark_blue:,
@@ -161,7 +161,7 @@ type Model {
     current_time: Float,
     prev_tick_time: Float,
     press_regions: List(PressRegion),
-    consts: Consts,
+    precomp: Precomp,
     seed: Seed,
   )
 }
@@ -210,8 +210,8 @@ type PressRegion {
   )
 }
 
-type Consts {
-  Consts(
+type Precomp {
+  Precomp(
     background_picture: Picture,
     shadow_picture: Picture,
     color_dark_blue: Colour,
@@ -515,7 +515,7 @@ fn view(model: Model) -> Picture {
           horizontal_angle_from_camera_center: args.1,
           horizontal_distance_from_camera: args.2,
           current_time: model.current_time,
-          consts: model.consts,
+          precomp: model.precomp,
         )
       }),
     )
@@ -523,7 +523,7 @@ fn view(model: Model) -> Picture {
     |> p.translate_xy(values.center.x, values.center.y)
 
   p.combine([
-    model.consts.background_picture,
+    model.precomp.background_picture,
     content,
     view_screen_effects(model),
     view_ui(model),
@@ -561,7 +561,7 @@ fn view_screen_effects(model: Model) -> Picture {
         text.view_wobbly_text(
           int.to_string(collected_star_count),
           model.current_time,
-          model.consts.color_dark_blue,
+          model.precomp.color_dark_blue,
         )
           |> p.scale_uniform(2.0)
           |> p.translate_xy(20.0, 30.0),
@@ -577,7 +577,7 @@ fn view_ui(model: Model) -> Picture {
       GamePlaying -> p.blank()
       GameWon -> view_victory_screen(model)
     },
-    view_pause_button(model.game_status, model.current_time, model.consts)
+    view_pause_button(model.game_status, model.current_time, model.precomp)
       |> p.translate_xy(17.0, values.height -. 17.0),
   ])
 }
@@ -590,7 +590,7 @@ fn view_victory_screen(model: Model) -> Picture {
       text.view_wobbly_text_x_centered(
         "♥︎congratulations♥︎",
         model.current_time,
-        model.consts.color_yellow,
+        model.precomp.color_yellow,
       )
         |> p.translate_x(values.width *. 0.5),
       ..[
@@ -601,7 +601,7 @@ fn view_victory_screen(model: Model) -> Picture {
         text.view_wobbly_text_x_centered(
           line_text,
           model.current_time,
-          model.consts.color_dark_blue,
+          model.precomp.color_dark_blue,
         )
         |> p.scale_uniform(0.5)
         |> p.translate_xy(
@@ -622,7 +622,7 @@ fn view_victory_screen(model: Model) -> Picture {
         text.view_wobbly_text(
           line_text,
           model.current_time,
-          model.consts.color_white,
+          model.precomp.color_white,
         )
         |> p.scale_uniform(0.5)
         |> p.translate_y(
@@ -640,21 +640,21 @@ fn view_pause_screen(model: Model) -> Picture {
     list.count(model.objects, where: fn(object) { object.kind == StarObject })
 
   p.combine([
-    view_title(model.current_time, model.consts)
+    view_title(model.current_time, model.precomp)
       |> p.translate_xy(0.0, 80.0),
     view_instructions(
       current_time: model.current_time,
       n_remaining_stars:,
-      consts: model.consts,
+      precomp: model.precomp,
     )
       |> p.translate_xy(0.0, 200.0),
-    view_links(model.current_time, model.consts),
+    view_links(model.current_time, model.precomp),
   ])
 }
 
 /// Rendered already centered horizontally on the screen, though vertically it's
 /// at 0.
-fn view_title(current_time: Float, consts: Consts) -> Picture {
+fn view_title(current_time: Float, precomp: Precomp) -> Picture {
   let top_text = "cielos"
   let top_text_scale = 1.5
   let top_text_width = text.calc_text_width(top_text, top_text_scale)
@@ -666,13 +666,13 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
     text.view_wobbly_text(
       top_text,
       current_time:,
-      color: consts.color_dark_blue,
+      color: precomp.color_dark_blue,
     )
       |> p.scale_uniform(top_text_scale),
     text.view_wobbly_text(
       bottom_text,
       current_time:,
-      color: consts.color_dark_blue,
+      color: precomp.color_dark_blue,
     )
       |> p.scale_uniform(bottom_text_scale)
       |> p.translate_xy({ top_text_width } -. { bottom_text_width }, 40.0),
@@ -685,7 +685,7 @@ fn view_title(current_time: Float, consts: Consts) -> Picture {
 fn view_instructions(
   current_time current_time: Float,
   n_remaining_stars n_remaining_stars: Int,
-  consts consts: Consts,
+  precomp precomp: Precomp,
 ) -> Picture {
   let texts = [
     "drag or keys ←→ to turn",
@@ -704,7 +704,7 @@ fn view_instructions(
   p.combine(
     texts
     |> list.index_map(fn(text, i) {
-      text.view_wobbly_text(text, current_time:, color: consts.color_dark_blue)
+      text.view_wobbly_text(text, current_time:, color: precomp.color_dark_blue)
       |> p.translate_y(values.char_width *. 2.5 *. int.to_float(i))
     }),
   )
@@ -715,22 +715,22 @@ fn view_instructions(
 fn view_pause_button(
   game_status: GameStatus,
   current_time: Float,
-  consts: Consts,
+  precomp: Precomp,
 ) -> Picture {
   p.combine([
     p.circle(15.0)
-      |> p.fill(consts.color_white_transparent)
+      |> p.fill(precomp.color_white_transparent)
       |> p.stroke_none,
     case game_status {
       GamePaused | GameWon -> {
         let label_text = "esc"
         let label_scale = 0.5
         let label =
-          text.view_wobbly_text(label_text, current_time, consts.color_white)
+          text.view_wobbly_text(label_text, current_time, precomp.color_white)
           |> p.scale_uniform(label_scale)
 
         p.combine([
-          view_icon_play(consts.color_dark_blue)
+          view_icon_play(precomp.color_dark_blue)
             |> p.translate_xy(-6.0, -6.0),
           label
             |> p.translate_xy(
@@ -741,7 +741,7 @@ fn view_pause_button(
       }
 
       GamePlaying ->
-        view_icon_pause(consts.color_dark_blue)
+        view_icon_pause(precomp.color_dark_blue)
         |> p.translate_xy(-6.0, -6.0)
     },
   ])
@@ -761,8 +761,8 @@ const button_width = 60.0
 
 const button_height = 20.0
 
-fn view_links(current_time: Float, consts: Consts) -> Picture {
-  view_button("about", current_time, consts)
+fn view_links(current_time: Float, precomp: Precomp) -> Picture {
+  view_button("about", current_time, precomp)
   |> p.translate_xy(
     values.width -. button_width -. 2.0,
     values.height -. button_height -. 2.0,
@@ -784,20 +784,20 @@ fn links_press_regions() -> List(PressRegion) {
   ]
 }
 
-fn view_button(label: String, current_time, consts: Consts) -> Picture {
+fn view_button(label: String, current_time, precomp: Precomp) -> Picture {
   let text_scale = 0.5
   let text_width = text.calc_text_width(label, text_scale)
 
   p.combine([
     p.rectangle(button_width, 20.0),
-    text.view_wobbly_text(label, current_time, consts.color_dark_blue)
+    text.view_wobbly_text(label, current_time, precomp.color_dark_blue)
       |> p.scale_uniform(text_scale)
       |> p.translate_xy(
         { button_width *. 0.5 } -. { text_width *. 0.5 },
         { button_height *. 0.5 } -. { values.char_width *. text_scale *. 0.5 },
       ),
   ])
-  |> p.fill(consts.color_white_transparent)
+  |> p.fill(precomp.color_white_transparent)
   |> p.stroke_none
 }
 
@@ -808,7 +808,7 @@ fn view_object(
   horizontal_angle_from_camera_center angle_hor: Float,
   horizontal_distance_from_camera distance_hor: Float,
   current_time current_time: Float,
-  consts consts: Consts,
+  precomp precomp: Precomp,
 ) -> Picture {
   let angle_ver = angle_between(0.0, 0.0, distance_hor, object.height)
   let is_far = distance_hor >. 50.0
@@ -823,7 +823,7 @@ fn view_object(
     )
 
   let object_picture =
-    get_picture_for_object(object.kind, current_time, is_far, consts)
+    get_picture_for_object(object.kind, current_time, is_far, precomp)
     |> p.scale_uniform(scale)
     |> p.translate_xy(translation.x, translation.y)
 
@@ -842,7 +842,7 @@ fn view_object(
           ),
         )
 
-      consts.shadow_picture
+      precomp.shadow_picture
       |> p.scale_uniform(scale)
       |> p.translate_xy(shadow_translation.x, shadow_translation.y)
     }
@@ -855,21 +855,21 @@ fn get_picture_for_object(
   object_kind: ObjectKind,
   current_time: Float,
   far: Bool,
-  consts: Consts,
+  precomp: Precomp,
 ) -> Picture {
   case far, object_kind {
-    False, StarObject -> view_star(current_time, consts, collected_time: None)
+    False, StarObject -> view_star(current_time, precomp, collected_time: None)
     False, CollectedStarObject(collected_time:) ->
-      view_star(current_time, consts, collected_time: Some(collected_time))
+      view_star(current_time, precomp, collected_time: Some(collected_time))
 
-    True, StarObject -> view_star_far(consts, collected: False)
-    True, CollectedStarObject(_) -> view_star_far(consts, collected: True)
+    True, StarObject -> view_star_far(precomp, collected: False)
+    True, CollectedStarObject(_) -> view_star_far(precomp, collected: True)
   }
 }
 
 fn view_star(
   current_time: Float,
-  consts: Consts,
+  precomp: Precomp,
   collected_time collected_time: Option(Float),
 ) -> Picture {
   let rotation = current_time /. 2000.0
@@ -878,16 +878,16 @@ fn view_star(
     None ->
       // Non-collected star.
       view_star_picture(
-        fill_color: consts.color_yellow,
-        stroke_color: consts.color_orange,
+        fill_color: precomp.color_yellow,
+        stroke_color: precomp.color_orange,
         rotation:,
       )
 
     Some(_) ->
       // Collected star.
       view_star_picture(
-        fill_color: consts.color_white,
-        stroke_color: consts.color_yellow,
+        fill_color: precomp.color_white,
+        stroke_color: precomp.color_yellow,
         rotation:,
       )
   }
@@ -914,10 +914,10 @@ fn view_star_picture(
   |> p.stroke(stroke_color, 10.0)
 }
 
-fn view_star_far(consts: Consts, collected collected: Bool) -> Picture {
+fn view_star_far(precomp: Precomp, collected collected: Bool) -> Picture {
   let color = case collected {
-    True -> consts.color_white
-    False -> consts.color_yellow
+    True -> precomp.color_white
+    False -> precomp.color_yellow
   }
 
   p.circle(1.0)
