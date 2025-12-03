@@ -1,10 +1,10 @@
+import consts
 import gleam/int
 import gleam/list
 import gleam/string
 import gleam_community/colour.{type Colour}
 import gleam_community/maths
 import paint.{type Picture} as p
-import values
 
 pub fn view_wobbly_text_x_centered(
   text: String,
@@ -29,7 +29,7 @@ pub fn view_wobbly_text(
       color:,
     )
     |> p.translate_x(
-      int.to_float(i) *. { values.char_width +. values.char_spacing },
+      int.to_float(i) *. { consts.char_width +. consts.char_spacing },
     )
   })
   |> p.combine
@@ -543,8 +543,8 @@ pub fn calc_text_width(text: String, scale: Float) -> Float {
   let length = int.to_float(string.length(text))
 
   {
-    { { values.char_width +. values.char_spacing } *. length }
-    -. values.char_spacing
+    { { consts.char_width +. consts.char_spacing } *. length }
+    -. consts.char_spacing
   }
   *. scale
 }

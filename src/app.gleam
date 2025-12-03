@@ -1,3 +1,4 @@
+import consts
 import gleam/float
 import gleam/int
 import gleam/list
@@ -15,7 +16,6 @@ import paint/event
 import prng/random
 import prng/seed.{type Seed}
 import text
-import values
 import vec/vec2.{type Vec2, Vec2}
 import vec/vec2f
 
@@ -80,7 +80,7 @@ fn generate_stars(
       generate_stars(count - 1, seed, [
         Object(
           // Draw straight north.
-          pos: Vec2(0.0, values.star_separation *. -1.0),
+          pos: Vec2(0.0, consts.star_separation *. -1.0),
           height: -1.0,
           kind: StarObject,
         ),
@@ -91,7 +91,7 @@ fn generate_stars(
       generate_stars(count - 1, seed, [
         Object(
           // Straight north again.
-          pos: Vec2(0.0, values.star_separation *. -2.0),
+          pos: Vec2(0.0, consts.star_separation *. -2.0),
           height: -1.0,
           kind: StarObject,
         ),
@@ -109,12 +109,12 @@ fn generate_stars(
           to_y: last.pos.y,
         )
       let #(angle_diff, seed) =
-        get_random_angle(values.max_star_generation_angle_variation_turns, seed)
+        get_random_angle(consts.max_star_generation_angle_variation_turns, seed)
       let pos =
         vec2f.add(
           last.pos,
           pos_from_polar(
-            length: values.star_separation,
+            length: consts.star_separation,
             angle: last_dir +. angle_diff,
           ),
         )
@@ -124,16 +124,16 @@ fn generate_stars(
         angle_between(
           from_x: 0.0,
           from_y: prev.height,
-          to_x: values.star_separation,
+          to_x: consts.star_separation,
           to_y: last.height,
         )
       let #(pitch_diff, seed) = get_random_angle(0.005, seed)
       let pitch = last_pitch +. pitch_diff
       let height =
-        maths.tan(pitch) *. values.star_separation
+        maths.tan(pitch) *. consts.star_separation
         |> float.clamp(
-          min: values.max_star_height *. -1.0,
-          max: values.max_star_height,
+          min: consts.max_star_height *. -1.0,
+          max: consts.max_star_height,
         )
 
       generate_stars(count - 1, seed, [
@@ -358,7 +358,7 @@ fn flip_game_status(model: Model) -> Model {
 /// according to elapsed time, its direction and the speed constant.
 fn move_avatar(model: Model) -> Model {
   let delta_time = model.current_time -. model.prev_tick_time
-  let r = values.speed *. delta_time
+  let r = consts.speed *. delta_time
   let #(tx, ty) = maths.polar_to_cartesian(r, model.avatar.dir)
 
   Model(
@@ -393,7 +393,7 @@ fn change_rotation_by_input(model: Model) -> Model {
     _, Flicked(force:, released_time:) -> {
       let time_since_flick = model.current_time -. released_time
       let inertial_movement_progress =
-        float.min(1.0, time_since_flick /. values.flick_inertia_duration_ms)
+        float.min(1.0, time_since_flick /. consts.flick_inertia_duration_ms)
 
       case inertial_movement_progress >=. 1.0 {
         True -> Model(..model, drag: NoDrag)
@@ -419,7 +419,7 @@ fn change_rotation_by_input(model: Model) -> Model {
 fn change_rotation_force(model: Model, amount: Float) -> Model {
   let delta_time = model.current_time -. model.prev_tick_time
   let amount_by_time =
-    amount *. delta_time *. values.rotation_force_acceleration
+    amount *. delta_time *. consts.rotation_force_acceleration
   let new_rotation_force =
     float.clamp(model.rotation_force +. amount_by_time, min: -2.0, max: 2.0)
 
@@ -440,7 +440,7 @@ fn apply_rotation_force(model: Model) -> Model {
           1.0,
           1.0
             -. {
-            1.0 /. { delta_time *. values.rotation_force_dampening_softness }
+            1.0 /. { delta_time *. consts.rotation_force_dampening_softness }
           },
         )
       let new_rotation_force = model.rotation_force *. dampening_factor
@@ -496,7 +496,7 @@ fn view(model: Model) -> Picture {
           float.absolute_value(vec2f.distance(camera.pos, object.pos))
         let in_field_of_view =
           float.absolute_value(horizontal_angle_from_camera_center)
-          <=. values.half_visible_angle
+          <=. consts.half_visible_angle
 
         case in_field_of_view {
           True ->
@@ -520,7 +520,7 @@ fn view(model: Model) -> Picture {
       }),
     )
     // Center.
-    |> p.translate_xy(values.center.x, values.center.y)
+    |> p.translate_xy(consts.center.x, consts.center.y)
 
   p.combine([
     model.precomp.background_picture,
@@ -544,7 +544,7 @@ fn view_screen_effects(model: Model) -> Picture {
   let time_since_last_star_collected =
     model.current_time -. last_time_star_collected
   let flash_progress =
-    time_since_last_star_collected /. values.collect_star_flash_duration_ms
+    time_since_last_star_collected /. consts.collect_star_flash_duration_ms
 
   case flash_progress <. 1.0 {
     False -> p.blank()
@@ -555,7 +555,7 @@ fn view_screen_effects(model: Model) -> Picture {
       let collected_star_count = list.length(collected_star_collection_times)
 
       p.combine([
-        p.rectangle(values.width, values.height)
+        p.rectangle(consts.width, consts.height)
           |> p.fill(color)
           |> p.stroke_none,
         text.view_wobbly_text(
@@ -578,7 +578,7 @@ fn view_ui(model: Model) -> Picture {
       GameWon -> view_victory_screen(model)
     },
     view_pause_button(model.game_status, model.current_time, model.precomp)
-      |> p.translate_xy(17.0, values.height -. 17.0),
+      |> p.translate_xy(17.0, consts.height -. 17.0),
   ])
 }
 
@@ -592,7 +592,7 @@ fn view_victory_screen(model: Model) -> Picture {
         model.current_time,
         model.precomp.color_yellow,
       )
-        |> p.translate_x(values.width *. 0.5),
+        |> p.translate_x(consts.width *. 0.5),
       ..[
         "you collected all " <> int.to_string(total_stars) <> " stars",
         "you are super player",
@@ -605,8 +605,8 @@ fn view_victory_screen(model: Model) -> Picture {
         )
         |> p.scale_uniform(0.5)
         |> p.translate_xy(
-          values.width *. 0.5,
-          30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
+          consts.width *. 0.5,
+          30.0 +. { consts.char_width *. 1.5 *. int.to_float(i) },
         )
       })
     ])
@@ -626,11 +626,11 @@ fn view_victory_screen(model: Model) -> Picture {
         )
         |> p.scale_uniform(0.5)
         |> p.translate_y(
-          30.0 +. { values.char_width *. 1.5 *. int.to_float(i) },
+          30.0 +. { consts.char_width *. 1.5 *. int.to_float(i) },
         )
       }),
     )
-    |> p.translate_xy(40.0, values.height -. 70.0)
+    |> p.translate_xy(40.0, consts.height -. 70.0)
 
   p.combine([top_message, play_again_message])
 }
@@ -677,7 +677,7 @@ fn view_title(current_time: Float, precomp: Precomp) -> Picture {
       |> p.scale_uniform(bottom_text_scale)
       |> p.translate_xy({ top_text_width } -. { bottom_text_width }, 40.0),
   ])
-  |> p.translate_x({ values.width *. 0.5 } -. { top_text_width *. 0.5 })
+  |> p.translate_x({ consts.width *. 0.5 } -. { top_text_width *. 0.5 })
 }
 
 /// Rendered already centered horizontally on the screen, though vertically it's
@@ -705,11 +705,11 @@ fn view_instructions(
     texts
     |> list.index_map(fn(text, i) {
       text.view_wobbly_text(text, current_time:, color: precomp.color_dark_blue)
-      |> p.translate_y(values.char_width *. 2.5 *. int.to_float(i))
+      |> p.translate_y(consts.char_width *. 2.5 *. int.to_float(i))
     }),
   )
   |> p.scale_uniform(scale)
-  |> p.translate_x({ values.width *. 0.5 } -. { max_width *. 0.5 })
+  |> p.translate_x({ consts.width *. 0.5 } -. { max_width *. 0.5 })
 }
 
 fn view_pause_button(
@@ -750,7 +750,7 @@ fn view_pause_button(
 fn pause_press_region() -> PressRegion {
   PressRegion(
     x: 0.0,
-    y: values.height -. 30.0,
+    y: consts.height -. 30.0,
     width: 30.0,
     height: 30.0,
     on_press: flip_game_status,
@@ -764,16 +764,16 @@ const button_height = 20.0
 fn view_links(current_time: Float, precomp: Precomp) -> Picture {
   view_button("about", current_time, precomp)
   |> p.translate_xy(
-    values.width -. button_width -. 2.0,
-    values.height -. button_height -. 2.0,
+    consts.width -. button_width -. 2.0,
+    consts.height -. button_height -. 2.0,
   )
 }
 
 fn links_press_regions() -> List(PressRegion) {
   [
     PressRegion(
-      x: values.width -. button_width -. 2.0,
-      y: values.height -. button_height -. 2.0,
+      x: consts.width -. button_width -. 2.0,
+      y: consts.height -. button_height -. 2.0,
       width: button_width,
       height: button_height,
       on_press: fn(model) {
@@ -794,7 +794,7 @@ fn view_button(label: String, current_time, precomp: Precomp) -> Picture {
       |> p.scale_uniform(text_scale)
       |> p.translate_xy(
         { button_width *. 0.5 } -. { text_width *. 0.5 },
-        { button_height *. 0.5 } -. { values.char_width *. text_scale *. 0.5 },
+        { button_height *. 0.5 } -. { consts.char_width *. text_scale *. 0.5 },
       ),
   ])
   |> p.fill(precomp.color_white_transparent)
@@ -818,8 +818,8 @@ fn view_object(
   }
   let translation =
     Vec2(
-      angle_hor *. values.center.x /. values.half_visible_angle,
-      float.negate(angle_ver *. values.center.x /. values.half_visible_angle),
+      angle_hor *. consts.center.x /. consts.half_visible_angle,
+      float.negate(angle_ver *. consts.center.x /. consts.half_visible_angle),
     )
 
   let object_picture =
@@ -838,7 +838,7 @@ fn view_object(
         Vec2(
           translation.x,
           float.negate(
-            shadow_angle_ver *. values.center.x /. values.half_visible_angle,
+            shadow_angle_ver *. consts.center.x /. consts.half_visible_angle,
           ),
         )
 
@@ -943,8 +943,8 @@ fn view_background() -> Picture {
       to_s: 0.4,
       from_l: 0.9,
       to_l: 0.98,
-      width: values.width,
-      height: values.height /. 2.0,
+      width: consts.width,
+      height: consts.height /. 2.0,
       steps: 50,
     ),
     view_gradient(
@@ -954,11 +954,11 @@ fn view_background() -> Picture {
       to_s: 0.7,
       from_l: 0.95,
       to_l: 0.8,
-      width: values.width,
-      height: values.height /. 2.0,
+      width: consts.width,
+      height: consts.height /. 2.0,
       steps: 50,
     )
-      |> p.translate_y(values.center.y),
+      |> p.translate_y(consts.center.y),
   ]
   |> p.combine
 }
